@@ -1,14 +1,8 @@
-# SIGFAR — Etapas pendientes del frontend
+# SIGFAR — Secuencia de desarrollo pendiente
 
-Completadas (según validación del usuario): Etapa 1, autenticación y navegación; Etapa 2, sucursales, medicamentos e inventarios.
+- **Etapa 5:** Solicitudes y entregas desde React; consulta de disponibilidad, confirmación y reservas, despacho, entrega y cancelación. Sin portal público ni call center telefónico.
+- **Etapa 6:** Auditoría centralizada desde React; lectura de registros, filtros y resúmenes para administrador.
+- **Etapa 7:** Pruebas integrales y regresión visual/navegador contra la versión v1.4 validada del backend, con esquema QA.
+- **Etapa 8:** Despliegue del prototipo React + Node.js + Oracle XE en servicio de nube y pruebas finales.
 
-La **Etapa 3** entrega el módulo de transferencias. Queda pendiente de comprobación funcional en navegador y Oracle locales.
-
-Próximos trabajos, con el mismo backend validado y sin extender el alcance:
-
-1. **Etapa 4:** pantallas de efectivo, gastos de planilla y activos fijos.
-2. **Etapa 5:** solicitudes de medicamentos, disponibilidad, reservas y entregas.
-3. **Etapa 6:** auditoría centralizada y pruebas de integración del frontend.
-4. **Etapa 7:** despliegue en un servicio de nube, con comprobaciones de extremo a extremo.
-
-No se incorporarán portal público, facturación electrónica, proveedores, mapa GPS ni funcionalidades ajenas al enunciado universitario.
+El frontend de Etapa 4 conserva módulos anteriores y no requiere ampliación de backend, nuevas tablas ni módulos empresariales ajenos al documento universitario.

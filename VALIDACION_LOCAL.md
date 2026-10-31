@@ -1,10 +1,14 @@
-# SIGFAR — Evidencia de comprobación · Frontend Etapa 3
+# Validación del código en el entorno de generación
 
-- Pruebas unitarias de Node: **54 aprobadas**, 0 fallidas (`npm test`). Incluye 20 casos nuevos.
-- Análisis sintáctico de archivos JS/JSX mediante parser TypeScript: **32 archivos** con sintaxis correcta.
-- Referencias a módulos locales: comprobación de existencia realizada.
-- Backend: **no modificado**. Oracle XE: **no modificado**.
+- Versión: frontend SIGFAR `0.4.0`.
+- Fuente: copia integral de la Etapa 3 y los nuevos componentes de Efectivo, Planillas y Activos Fijos.
+- Contratos revisados directamente en el código backend SIGFAR v1.4: `/efectivo`, `/planillas`, `/activos`.
+- `npm test`: **81 aprobadas / 81 ejecutadas** (54 previas y 27 nuevas).
+- Análisis de sintaxis JS/JSX: **34 archivos**, sin errores detectados.
+- Importaciones relativas JS/JSX analizadas: **112**, sin referencias faltantes.
+- `npm install --offline`: falla porque no hay paquetes React/Vite en caché.
+- `npm install` con registro en línea: falla con `EAI_AGAIN`, resolución DNS de `registry.npmjs.org`.
+- `npm run build`: **no ejecutado aquí** porque las dependencias no se pudieron instalar.
+- Navegador integrado con backend del usuario: **no ejecutado**, pues la API Oracle está en la computadora del usuario.
 
-**Limitaciones del entorno de construcción:** no se pudo descargar `react`, `vite` ni otros paquetes npm debido a que la resolución de `registry.npmjs.org` falló (`EAI_AGAIN`). Por lo tanto, aquí **no se ejecutó `npm run build`, ni se inició Vite ni se verificaron flujos HTTP reales contra Oracle local**. El usuario debe comprobar la compilación, el navegador y las operaciones contra su backend validado, siguiendo `PRUEBAS_MANUALES.md`.
-
-**Nota sobre el ID destino:** el API limita `GET /sucursales` al propio registro para el encargado. El formulario acepta la entrada manual del identificador de la sucursal destino y deja al servidor validar su existencia/actividad. No se modificaron los permisos.
+Ejecutar `npm install`, `npm test`, `npm run build`, `npm run dev` y las comprobaciones de `PRUEBAS_MANUALES.md` en la computadora donde funciona Node.js + Oracle XE.
