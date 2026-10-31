@@ -1,52 +1,67 @@
-# SIGFAR — Pruebas funcionales manuales — Etapa 4
+# SIGFAR — Pruebas manuales de aceptación · Etapa 5
 
-Utiliza datos ficticios, preferiblemente en el esquema `SIGFAR_QA`. Ejecuta las comprobaciones con el backend v1.4 y React Etapa 4.
+**Requisitos**: backend v1.4 conectado a Oracle XE; frontend Etapa 5; cuentas de los tres roles; datos ficticios; inventario suficiente en al menos una farmacia y un municipio coincidente. Se recomienda un esquema QA para las operaciones de escritura.
 
-## Instalación y regresión (sin escrituras)
+## Preparación
 
-- [ ] `npm test` finaliza con 81 pruebas aprobadas.
-- [ ] `npm run build` finaliza sin errores.
-- [ ] Inicio de sesión de administrador, encargado y coordinador funciona como en Etapa 3.
-- [ ] Se conservan las páginas de sucursales, medicamentos, inventarios y transferencias.
-- [ ] El coordinador no ve ni puede abrir `/efectivo`, `/planillas` o `/activos`.
-- [ ] El administrador abre las tres páginas y ve datos consolidados de varias farmacias.
-- [ ] El administrador NO ve botones de nuevo registro ni de edición en estas páginas.
-- [ ] El encargado solo consulta sus datos y ve botones para registrar y corregir donde corresponda.
+1. Verifica la respuesta de `http://127.0.0.1:3000/api/v1/health`.
+2. Ejecuta `npm test` y `npm run build` en el frontend.
+3. Comprueba que React carga en `http://127.0.0.1:5173`.
+4. Identifica una farmacia activa, su departamento/municipio exactos y medicamentos activos disponibles mediante los módulos ya validados.
 
-## Efectivo
+## Casos de aceptación
 
-- [ ] Como administrador, los filtros de sucursal, tipo y fechas modifican tabla y resumen.
-- [ ] El desglose por sucursal coincide con el resumen de la API `GET /api/v1/efectivo/resumen`.
-- [ ] Como encargado, registrar `INGRESO`, monto `125.50`, concepto ficticio: se crea registro.
-- [ ] Registrar `EGRESO`, monto `25.25`: el flujo neto refleja la diferencia.
-- [ ] Intentar registrar monto `0`, `-2`, `1,20` o `10.555`: el formulario impide enviar.
-- [ ] Ver detalle de un movimiento muestra tipo, sucursal, fecha, usuario, concepto y monto.
-- [ ] No hay botones para editar o eliminar movimientos de efectivo.
+| ID | Rol | Acción | Resultado esperado |
+|---|---|---|---|
+| S-01 | Administrador | Entrar en Solicitudes | Se muestra la lista sin botones de escritura. |
+| S-02 | Coordinador | Entrar en Solicitudes | Aparece **Nueva solicitud**. |
+| S-03 | Encargado | Entrar en Solicitudes | Solo ve solicitudes asignadas a su farmacia. |
+| S-04 | Coordinador | Registrar cliente, municipio y 2 medicamentos activos | Se crea una solicitud `PENDIENTE`; no se descuenta ni reserva inventario. |
+| S-05 | Coordinador | Usar **Consultar disponibilidad** con inventario suficiente | Muestra sucursal elegible y tiempo de entrega configurado. |
+| S-06 | Coordinador | Consultar disponibilidad sin cobertura | Mensaje indicando que no hay farmacias elegibles; no se crean reservas. |
+| S-07 | Coordinador | Registrar 2 renglones del mismo medicamento | El formulario rechaza la solicitud. |
+| S-08 | Coordinador | Registrar cantidad cero o fraccionaria | Rechazo de validación sin petición de escritura. |
+| S-09 | Coordinador | Registrar medicamento inactivo | No se ofrece para seleccionar; no se puede enviar. |
+| S-10 | Coordinador | Abrir detalle pendiente y sus opciones | Se ven sucursales elegibles, método de pago y acción de confirmar. |
+| S-11 | Coordinador | Confirmar con efectivo/tarjeta y sucursal elegible | Estado `CONFIRMADA`; se generan reservas sin descontar existencias. |
+| S-12 | Coordinador | Confirmar de nuevo una solicitud ya confirmada | Acción no disponible; el servidor rechaza un intento externo duplicado. |
+| S-13 | Encargado de otra sucursal | Intentar consultar o despachar la solicitud | Acceso denegado por el backend. |
+| S-14 | Encargado asignado | Despachar solicitud confirmada | Estado `DESPACHADA`; las reservas se consumen y el inventario existente se descuenta una vez. |
+| S-15 | Encargado asignado | Intentar segundo despacho | No hay botón habilitado; una repetición HTTP se rechaza. |
+| S-16 | Coordinador o encargado asignado | Marcar solicitud despachada como entregada | Estado `ENTREGADA` y fecha real registrada. |
+| S-17 | Coordinador | Cancelar una solicitud pendiente | Estado `CANCELADA`, sin inventario comprometido. |
+| S-18 | Coordinador | Cancelar una solicitud confirmada sin despacho | Estado `CANCELADA` y reservas liberadas. |
+| S-19 | Coordinador | Intentar cancelar una solicitud despachada | Acción no disponible; el backend lo rechaza. |
+| S-20 | Administrador | Filtrar por estado y farmacia | Resultados consistentes con el backend, paginados. |
+| S-21 | Coordinador | Ver detalle de solicitud tardía (si existe) | Se muestra el indicador tardía según valor devuelto por Oracle. |
+| S-22 | Todos | Recargar la página o cambiar de módulo | La sesión se verifica y los registros vuelven a consultarse. |
+| S-23 | Todos | Interrumpir temporalmente Node.js | Aparece error de conexión sin declarar una operación exitosa. |
+| S-24 | Todos | Revisar las vistas de etapas 1–4 | Continúan operativas las funciones ya validadas. |
+| S-25 | Coordinador | Cambiar un medicamento después de consultar disponibilidad | Se invalida la previsualización anterior; requiere una nueva consulta. |
+| S-26 | Administrador | Ver detalle de solicitud confirmada | Puede leer pago, fechas, medicamentos y estado de reservas sin cambiar datos. |
 
-## Planillas
+## Verificaciones SQL orientativas en DBeaver
 
-- [ ] Como administrador, filtrar por sucursal y períodos muestra los importes correctos.
-- [ ] Como encargado, registrar planilla para un **período nuevo**, por ejemplo `2027-08`, con monto `1200.00`.
-- [ ] Repetir el mismo período/sucursal: la API rechaza el duplicado; React muestra su mensaje y no informa éxito.
-- [ ] Corregir solo el monto de esa planilla a `1500.20`; la tabla y el resumen se actualizan.
-- [ ] Intentar un período inválido o un valor con más de dos decimales: validación de formulario.
-- [ ] Verificar en auditoría, como administrador, la acción `CORREGIR` sobre `GASTO_PLANILLA`.
+Tras ejecutar operaciones con datos ficticios, consulta los registros por su ID:
 
-## Activos fijos
+```sql
+SELECT id_solicitud, estado, id_sucursal_asignada, forma_pago,
+       fecha_estimada_entrega, fecha_despacho, fecha_entrega_real
+FROM solicitud_entrega WHERE id_solicitud = :id_solicitud;
 
-- [ ] El administrador filtra por sucursal, `VIGENTE` y `BAJA`, y el resumen muestra siempre **activos vigentes**.
-- [ ] El encargado registra un activo ficticio con código único, descripción y valor `2500.00`.
-- [ ] Modificar descripción y valor a `2400.00`; comprobar que el resumen refleja el nuevo valor.
-- [ ] Cambiar estado a `BAJA`; el activo aparece al filtrar bajas y deja de contar en valor de vigentes.
-- [ ] La tabla y resumen muestran quetzales con dos decimales.
-- [ ] Confirmar en auditoría la operación `MODIFICAR` y los datos anteriores/posteriores.
+SELECT d.id_medicamento, d.cantidad, r.estado AS estado_reserva,
+       r.cantidad AS cantidad_reservada
+FROM detalle_solicitud d
+LEFT JOIN reserva_inventario r ON r.id_detalle_solicitud = d.id_detalle_solicitud
+WHERE d.id_solicitud = :id_solicitud;
 
-## Integridad y errores
+SELECT id_movimiento, tipo, cantidad, id_sucursal, id_medicamento
+FROM movimiento_inventario
+WHERE id_detalle_solicitud IN (
+  SELECT id_detalle_solicitud FROM detalle_solicitud WHERE id_solicitud = :id_solicitud
+);
+```
 
-- [ ] Si el backend se detiene temporalmente, las vistas muestran error de conexión y ofrecen actualizar.
-- [ ] Con token vencido, React vuelve a pantalla de acceso sin mostrar información protegida.
-- [ ] Una operación rechazada por la API (403, 409 o 400) muestra error y no indica éxito.
-- [ ] Tras guardar, los resúmenes se actualizan junto con los listados.
-- [ ] DBeaver confirma los registros creados en `MOVIMIENTO_EFECTIVO`, `GASTO_PLANILLA` y `ACTIVO_FIJO` y sus correspondientes entradas de `REGISTRO_AUDITORIA`.
+DBeaver solicitará el valor de `:id_solicitud`. Estas son consultas de **solo lectura**. El historial de auditoría puede revisarse igualmente desde la tabla `REGISTRO_AUDITORIA` hasta que esté disponible la pantalla de la Etapa 6.
 
-**Nota:** no ejecutes nuevamente los scripts de carga inicial de Oracle. Evita repetir la prueba de planilla con el mismo período a menos que quieras comprobar explícitamente la restricción de duplicado.
+**Aceptación**: considera validada la Etapa 5 solo cuando la compilación y los flujos operativos relevantes se hayan comprobado desde el navegador conectado a tu backend y Oracle XE reales.

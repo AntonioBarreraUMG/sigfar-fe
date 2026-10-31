@@ -13,6 +13,7 @@ import { TransferenciasPage } from '../pages/TransferenciasPage.jsx';
 import { EfectivoPage } from '../pages/EfectivoPage.jsx';
 import { PlanillasPage } from '../pages/PlanillasPage.jsx';
 import { ActivosPage } from '../pages/ActivosPage.jsx';
+import { SolicitudesPage } from '../pages/SolicitudesPage.jsx';
 import { UnauthorizedPage } from '../pages/UnauthorizedPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
 import { MODULOS, puedeAcceder } from '../utils/access.js';
@@ -22,7 +23,7 @@ function PublicLogin() {
   if (estado === 'comprobando') return <LoadingScreen />;
   return estado === 'autenticado' ? <Navigate to="/" replace /> : <LoginPage />;
 }
-const IMPLEMENTADOS = Object.freeze({ sucursales: SucursalesPage, medicamentos: MedicamentosPage, inventarios: InventariosPage, transferencias: TransferenciasPage, efectivo: EfectivoPage, planillas: PlanillasPage, activos: ActivosPage });
+const IMPLEMENTADOS = Object.freeze({ sucursales: SucursalesPage, medicamentos: MedicamentosPage, inventarios: InventariosPage, transferencias: TransferenciasPage, efectivo: EfectivoPage, planillas: PlanillasPage, activos: ActivosPage, solicitudes: SolicitudesPage });
 function AllowedModule({ modulo }) {
   const { usuario } = useAuth();
   if (!puedeAcceder(usuario?.rol, modulo)) return <UnauthorizedPage />;

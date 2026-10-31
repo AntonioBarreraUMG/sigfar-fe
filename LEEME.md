@@ -1,25 +1,21 @@
-# SIGFAR — Frontend React + Vite — Etapa 4
+# SIGFAR — Frontend React + Vite · Etapa 5
 
-## Alcance
+**Entregable acumulativo**: incluye las etapas 1–4 ya validadas por el estudiante más el módulo de **Solicitudes y Entregas**.
 
-Proyecto **completo y acumulativo** sobre la Etapa 3 comprobada por el usuario. Se añaden tres pantallas: **Efectivo**, **Planillas** y **Activos fijos**. Conserva autenticación, sucursales, medicamentos, inventarios y transferencias.
+## Compatibilidad
 
-**No cambia** el backend Node.js + Express v1.4, la base de datos Oracle XE (XEPDB1), ni los permisos o contratos de API. No se requiere ejecutar SQL ni recargar datos iniciales.
+- Backend: **SIGFAR v1.4** (ya validado), sin modificaciones.
+- Base de datos: **Oracle XE 21c / XEPDB1**, sin nuevos scripts ni cambios a las 15 tablas.
+- Frontend: React 19 + Vite 7 + React Router 7 (Node.js **>= 20.19**).
+- Proxy Vite existente: `/api` → `127.0.0.1:3000`; frontend en `127.0.0.1:5173`.
+- No se agregaron servicios externos ni módulos fuera del enunciado.
 
-## Requisitos
+## Instalación en Windows / PowerShell
 
-- Node.js >= 20.19
-- npm
-- Backend SIGFAR v1.4 funcionando con Oracle XE en `127.0.0.1:1521/XEPDB1`
-- API disponible en `http://127.0.0.1:3000/api/v1/health`
-- Usuario administrador o encargado de sucursal. El coordinador no tiene acceso a estos módulos.
-
-## Instalación (Windows PowerShell)
-
-1. Detén la instancia anterior de React y haz una copia de seguridad de la carpeta Etapa 3.
-2. Descomprime este ZIP como proyecto **completo** en una carpeta nueva; no es un parche parcial.
-3. Mantén el backend v1.4 iniciado y su `.env` actual.
-4. Abre PowerShell en la carpeta del frontend y ejecuta:
+1. Haz copia de seguridad de tu carpeta de la Etapa 4; descomprime este ZIP en otra carpeta.
+2. Mantén el backend v1.4 original conectado a Oracle XE mediante tu archivo `.env`.
+3. Abre una terminal en el backend y ejecuta `npm run dev`.
+4. Abre otra terminal en esta carpeta y ejecuta:
 
 ```powershell
 npm install
@@ -28,57 +24,67 @@ npm run build
 npm run dev
 ```
 
-5. Abre `http://127.0.0.1:5173/` en tu navegador.
+5. Abre `http://127.0.0.1:5173` e inicia sesión con las credenciales de demostración que ya probaste.
 
-Si el backend funciona en otro puerto, copia `.env.example` a `.env` y cambia `SIGFAR_API_TARGET`. **Nunca** coloques secretos JWT ni credenciales Oracle en el frontend.
+**No ejecutes de nuevo los archivos de creación de tablas ni de datos de prueba.** No copies archivos `.env` del backend dentro del frontend. El servidor de Vite resuelve la comunicación `/api` automáticamente durante el desarrollo.
 
-## Funcionalidades
+## Qué agrega la Etapa 5
 
-### Efectivo `/efectivo`
+El área **Solicitudes y entregas** (ruta `/solicitudes`) permite:
 
-- Consulta paginada de ingresos y egresos, filtros por sucursal (administrador), tipo y fechas.
-- Resumen calculado por API: ingresos, egresos, flujo neto y cantidad de movimientos, con desglose por sucursal.
-- Registro de movimiento únicamente por encargado en su farmacia.
-- Detalle de lectura del movimiento; no se implementa edición ni eliminación de efectivo.
+- Consultar solicitudes existentes, su estado, farmacia asignada, municipio, fechas e indicador de entrega tardía.
+- Filtrar por estado y, para administradores y coordinadores, por farmacia asignada.
+- Consultar el detalle, medicamentos, cantidades y estado de reservas.
+- Como coordinador: registrar una solicitud pendiente, con entre 1 y 20 medicamentos; consultar disponibilidad por departamento y municipio; consultar opciones de la solicitud; confirmar una farmacia elegible y método de pago; cancelar mientras esté pendiente o confirmada; registrar la entrega una vez despachada.
+- Como encargado de la sucursal asignada: consultar solicitudes de su sucursal, despachar reservas y registrar entregas despachadas.
+- Como administrador: consultar las solicitudes y farmacias elegibles sin modificar operaciones.
 
-### Planillas `/planillas`
+**Reglas principales**: la disponibilidad es de lectura; registrar solicitud no reserva inventario; confirmar reserva; despachar descuenta existencias y consume reservas; cancelar antes del despacho libera reservas; entregar registra la finalización. La API vuelve a validar disponibilidad, autorizaciones y cambios de estado.
 
-- Consulta paginada y resumen de gastos por período y sucursal.
-- Filtros por sucursal (administrador) y período de inicio/fin.
-- Encargado registra un único monto por período de su sucursal (el servidor rechaza duplicados).
-- Encargado puede corregir exclusivamente el **monto** de su registro; la auditoría registra el cambio.
-- Sin cálculo de salarios individuales ni nómina completa.
+## Endpoints utilizados
 
-### Activos fijos `/activos`
+| Acción | Método | Endpoint (relativo a `/api/v1`) | Rol que ejecuta |
+|---|---|---|---|
+| Listado paginado | GET | `/solicitudes?desde=0&limite=20` | Todos; encargado solo su sucursal |
+| Detalle | GET | `/solicitudes/:id` | Usuarios autorizados |
+| Disponibilidad | POST | `/solicitudes/disponibilidad` | Coordinador o administrador |
+| Registro | POST | `/solicitudes` | Coordinador |
+| Opciones de una solicitud | GET | `/solicitudes/:id/opciones` | Coordinador o administrador |
+| Confirmación/reserva | POST | `/solicitudes/:id/confirmar` | Coordinador |
+| Despacho | POST | `/solicitudes/:id/despachar` | Encargado asignado |
+| Entrega | POST | `/solicitudes/:id/entregar` | Coordinador o encargado asignado |
+| Cancelación | POST | `/solicitudes/:id/cancelar` | Coordinador |
 
-- Consulta paginada con filtros por sucursal y estado.
-- Resumen de cantidad y valor de activos **vigentes**, independientemente del filtro de estado del listado.
-- Encargado registra activos propios y puede modificar descripción, valor o estado (`VIGENTE`/`BAJA`).
-- Sin depreciación ni contabilidad general.
+Los tres últimos endpoints reciben un POST **sin cuerpo JSON**. La confirmación recibe solo `{ "id_sucursal": 1, "forma_pago": "EFECTIVO" }`. El registro recibe datos básicos de cliente, ubicación y detalles con `{ "id_medicamento": n, "cantidad": n }`.
 
-## Seguridad y datos
+## Uso sugerido de los roles
 
-- El administrador **solo consulta** estos módulos; no registra ni modifica.
-- El encargado **solo opera sobre su sucursal**. La comprobación en React complementa, pero no sustituye, la del backend.
-- El coordinador no puede abrir estas rutas ni verlas en el menú.
-- Los montos se envían a la API como **cadenas decimales** (`"150.25"`) para evitar redondeos IEEE 754.
-- La moneda visualizada es GTQ; las fechas siguen el huso `America/Guatemala`.
-- Los registros de planilla y activos corregidos conservan su historial de auditoría en Oracle.
-- La paginación usa `limite=20` y `desde`; la API no expone un conteo total, por lo que no se infieren páginas totales.
+1. Inicia sesión como **coordinador**, registra una solicitud y, si existe cobertura e inventario, confirma una farmacia elegible.
+2. Inicia sesión como **encargado** de la farmacia asignada, abre la solicitud confirmada y presiona **Confirmar despacho**.
+3. Inicia sesión como **coordinador** o el encargado asignado para completar la entrega.
+4. Inicia sesión como **administrador** y comprueba la consulta general. En la Etapa 6 se añadirá la pantalla de auditoría central.
+
+Para probar cancelaciones, crea otra solicitud pendiente o confirmada que aún no se haya despachado.
 
 ## Pruebas
 
-```powershell
-npm test       # 81 pruebas de lógica y contratos de API
-npm run build  # Compilación completa con Vite y React
-```
+- `npm test`: ejecuta pruebas unitarias y de contrato HTTP (etapas 1–5).
+- `npm run build`: compilación de producción de React/Vite.
+- `PRUEBAS_MANUALES.md`: verificación en navegador y Oracle XE.
+- `VALIDACION_LOCAL.md`: informe de pruebas que se pudieron ejecutar en el entorno de generación.
 
-Revisa `PRUEBAS_MANUALES.md` para comprobar los tres roles, los formularios y la persistencia real en Oracle. Emplea el esquema de QA o datos ficticios para operaciones de escritura.
+**Importante**: las pruebas automatizadas del repositorio emplean simuladores de HTTP y verifican validaciones/contratos. No sustituyen las pruebas de interfaz y escritura realizadas con tu Oracle local. Haz esas operaciones con datos ficticios, preferentemente con el esquema QA del proyecto.
 
-## Notas de validación de esta entrega
+## Archivos nuevos o actualizados
 
-En el entorno de generación se ejecutaron **81 de 81 pruebas JavaScript**; se verificaron también 34 archivos JS/JSX y 112 importaciones locales mediante el analizador TypeScript. **No fue posible ejecutar `npm install` ni `npm run build` aquí** por falta de resolución de `registry.npmjs.org`. La compilación y las pruebas reales en navegador contra el backend local quedan a cargo del usuario.
+- `src/pages/SolicitudesPage.jsx`: pantalla, detalle, disponibilidad, estados y formularios.
+- `src/services/solicitudesApi.js`: adaptador de los nueve endpoints existentes.
+- `src/utils/solicitudes.js`: permisos, conversiones y validación de datos.
+- `src/app/App.jsx`: conexión con la navegación existente.
+- `src/styles/global.css`: estilos acotados al módulo.
+- `src/layouts/AppLayout.jsx`: leyenda de etapa y progreso.
+- `tests/solicitudes.test.js`: 25 nuevos casos de validación y contrato.
 
-## Siguiente etapa
+## Funcionalidades deliberadamente fuera del alcance
 
-Etapa 5: Solicitudes y entregas, usando exclusivamente los endpoints existentes del backend v1.4.
+No incluye portal público, telefonía, geolocalización GPS, rutas, cobro de tarjetas, facturación, ajuste de existencias desde la pantalla de entregas, creación de usuarios ni cambios al backend.
