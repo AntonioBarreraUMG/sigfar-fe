@@ -1,82 +1,71 @@
-# SIGFAR — Frontend React / Etapa 2: Sucursales, Medicamentos e Inventarios
+# SIGFAR — Frontend React + Vite · Etapa 3: Transferencias
 
-**Prototipo académico Universidad Mariano Gálvez de Guatemala.** Actualización acumulativa de la Etapa 1, con autenticación, navegación por rol y las tres primeras áreas funcionales. Compatible con **SIGFAR Backend v1.4 + Oracle XE (`XEPDB1`)**, sin cambios al backend o a las 15 tablas.
+Prototipo académico de la Universidad Mariano Gálvez de Guatemala. Entrega **acumulativa** respecto a la Etapa 2: mantiene la autenticación, los permisos, las pantallas de sucursales, medicamentos e inventarios y añade las transferencias completas por interfaz web.
 
-## Qué se ha implementado
+**Compatibilidad:** backend SIGFAR v1.4 (Node.js + Express) y el esquema Oracle XE ya validado (`127.0.0.1:1521/XEPDB1`). **No hay scripts SQL nuevos ni modificaciones al backend.**
 
-| Módulo | Consulta | Escritura | Permisos |
-|---|---|---|---|
-| Sucursales | Listar, filtrar por estado, páginas de 20 | Crear y editar | Los tres roles consultan. Solo `ADMIN_CENTRAL` escribe. El encargado solo puede consultar su sucursal, como fija la API. |
-| Medicamentos | Listar, filtrar activos, páginas de 20 | Crear y editar | Los tres roles consultan. Solo `ADMIN_CENTRAL` escribe. |
-| Inventarios | Consultar saldos existente/reservado/disponible; filtrar por sucursal/medicamento | Inventario inicial y ajustes de entrada/salida | Los tres roles consultan; el encargado solo ve su sucursal. Solo `ENCARGADO` escribe movimientos de su propia sucursal. |
-| Movimientos | Historial paginado y filtrable | Consulta únicamente | `ADMIN_CENTRAL` y `ENCARGADO`. El coordinador no ve el historial. |
+## Funcionalidades de la etapa
 
-Las otras seis áreas (transferencias, efectivo, planilla, activos, solicitudes y auditoría) conservan páginas de preparación: sus interfaces **todavía no están implementadas**. El backend ya dispone de ellas.
+- `GET /api/v1/transferencias`: historial con paginación de 20 en 20, filtros por estado y por sucursal (solo administrador).
+- `GET /api/v1/transferencias/:id`: detalle de encabezado y medicamentos.
+- `POST /api/v1/transferencias`: registrar transferencia de uno a 50 medicamentos, sin descuento inmediato de inventario.
+- `POST /api/v1/transferencias/:id/despachar`: cambiar de `REGISTRADA` a `EN_TRANSITO`; el backend comprueba existencias disponibles y descuenta el inventario de origen.
+- `POST /api/v1/transferencias/:id/recibir`: cambiar de `EN_TRANSITO` a `RECIBIDA`; el backend incrementa inventario de destino.
 
-## Instalación en Windows usando PowerShell
+Los dos endpoints de cambio de estado reciben **POST sin cuerpo JSON**. Cada acción muestra un aviso de confirmación antes del envío. Se impide utilizar la interfaz mientras una escritura está en progreso y se exponen los errores devueltos por la API. El backend sigue aplicando permisos y transacciones.
 
-**1.** Conserva tu backend v1.4 validado y tu Oracle XE actual. En una terminal, ejecuta:
+## Permisos
+
+| Rol | Consultar | Registrar | Despachar | Recibir |
+|---|---|---|---|---|
+| `ADMIN_CENTRAL` | Todas | No | No | No |
+| `ENCARGADO` | Donde participa su sucursal | Desde su sucursal | Si es el origen | Si es el destino |
+| `COORD_ENTREGAS` | No | No | No | No |
+
+## Una limitación del backend que el frontend respeta
+
+`GET /api/v1/sucursales` devuelve **solo la propia sucursal** para el rol `ENCARGADO`. Sin embargo, este mismo rol puede transferir medicamentos a otras farmacias utilizando `id_sucursal_destino`. No hay un endpoint de búsqueda pública de sucursales que podamos consumir sin cambiar el backend.
+
+Por eso el formulario pide el **ID numérico de la sucursal destino**. El administrador puede consultar ese ID desde la pantalla *Sucursales* y facilitárselo al encargado. El backend verifica que la sucursal destino exista, esté activa y sea diferente del origen. El registro no deja de funcionar por no disponer del nombre del destino en el selector.
+
+Esta elección es deliberada: **no se cambiaron permisos del backend, ni se agregó un endpoint, ni se amplió el alcance académico**.
+
+## Ejecutar en Windows / PowerShell
+
+1. Deja en funcionamiento tu backend v1.4 y la base de datos Oracle XE habitual.
+
+   ```powershell
+   cd C:\ruta\SIGFAR_Backend
+   npm run dev
+   ```
+
+2. Extrae este paquete en una carpeta nueva. Es una copia completa del frontend, no necesitas aplicar parches manuales. Conserva una copia de tu Etapa 2 funcionando.
+
+   ```powershell
+   cd C:\ruta\SIGFAR_Frontend_Etapa3
+   npm install
+   npm test
+   npm run build
+   npm run dev
+   ```
+
+3. Abre **http://127.0.0.1:5173**. El proxy de Vite envía `/api` a `http://127.0.0.1:3000`. No es necesario exponer Oracle a React. Si tu backend usa un puerto distinto, crea un `.env` del frontend basado en `.env.example` y cambia `SIGFAR_API_TARGET`; nunca copies contraseñas de Oracle ni el secreto JWT al frontend.
+
+4. Inicia sesión con un encargado y entra a **Transferencias**. Para confirmar una transferencia completa entre sucursales necesitas iniciar sesión como encargado de origen y después como encargado del destino.
+
+5. Sigue `PRUEBAS_MANUALES.md` antes de dar la etapa por validada.
+
+## Comprobaciones automatizadas
 
 ```powershell
-cd C:\ruta\SIGFAR_Backend
-npm run dev
-```
-
-Comprueba `http://127.0.0.1:3000/api/v1/health`.
-
-**2.** Extrae el ZIP de la Etapa 2 en una carpeta propia, por ejemplo `C:\proyectos\SIGFAR_Frontend_Etapa2`. No sobrescribas el archivo `.env` ni el backend, y haz copia de tu frontend anterior antes de reemplazarlo. Si ya personalizaste la Etapa 1, compara cambios antes de copiar archivos.
-
-```powershell
-cd C:\proyectos\SIGFAR_Frontend_Etapa2
-npm install
 npm test
 npm run build
-npm run dev
 ```
 
-**3.** Abre `http://127.0.0.1:5173`. Inicia sesión con tus credenciales actuales de SIGFAR, sin publicar ni copiar la contraseña de Oracle en React.
+Se incluyen **54 pruebas Node** (34 previas + 20 nuevas). Las nuevas verifican rutas REST, filtros, permisos, transiciones de estado, datos numéricos, renglones duplicados y tratamiento de respuestas 403/409. Estas pruebas **no modifican Oracle**.
 
-Vite usa el proxy `/api → http://127.0.0.1:3000` de la Etapa 1. Si cambiaste el puerto del backend, copia `.env.example` a `.env` y ajusta `SIGFAR_API_TARGET` (solo Vite, nunca secreto del navegador).
+Las pruebas completas desde el navegador dependen del backend y Oracle locales; los procedimientos están en `PRUEBAS_MANUALES.md`. Realiza las pruebas de escritura en el esquema de demostración o QA, para evitar alterar registros que desees conservar.
 
-## Reglas que respeta la interfaz
+## Alcance que se conserva
 
-- Autenticación real con JWT del backend; no hay datos inventados ni almacenamiento de contraseñas.
-- Sucursales y medicamentos: `POST` para crear; `PATCH /:id` para editar. Los listados son `GET`, con `limite` y `desde`.
-- Inventarios: `GET /inventarios`, `GET /inventarios/movimientos`, `POST /inventarios/movimientos`.
-- El encargado únicamente envía `id_sucursal` de su cuenta. La API vuelve a validar los permisos en cada operación.
-- Inventario inicial se admite una sola vez por sucursal y medicamento; los ajustes solo cuando ya existe una fila de inventario.
-- Salidas de inventario nunca permiten utilizar cantidades reservadas (regla verificada por Oracle/backend).
-- Los campos `cantidad` y `tiempo_entrega_min` se envían como enteros, no como texto. Los estados se mantienen en códigos `S/N`, y los tipos de movimiento respetan el contrato v1.4.
-- Las consultas paginadas muestran 20 resultados como máximo; el backend no informa el total de registros y por eso solo hay botones Anterior/Siguiente. Si una página de 20 es la última, Siguiente puede devolver una página vacía, desde la cual puedes volver con Anterior.
-- Las listas de selección utilizan lotes de hasta 100 por petición, con límite de seguridad de 20 páginas. Ante un catálogo superior a 2.000 filas se informa el límite y no se inventan elementos faltantes.
-
-## Contratos API consumidos
-
-| Verbo | Ruta | Uso |
-|---|---|---|
-| GET | `/api/v1/sucursales?desde=0&limite=20&activa=S` | Listar y filtrar sucursales |
-| POST | `/api/v1/sucursales` | Crear sucursal (administrador) |
-| PATCH | `/api/v1/sucursales/:id` | Actualizar sucursal (administrador) |
-| GET | `/api/v1/medicamentos?desde=0&limite=20&activo=S` | Listar y filtrar medicamentos |
-| POST | `/api/v1/medicamentos` | Crear medicamento (administrador) |
-| PATCH | `/api/v1/medicamentos/:id` | Actualizar medicamento (administrador) |
-| GET | `/api/v1/inventarios?id_sucursal=1&id_medicamento=2` | Consultar existencias y reservas |
-| GET | `/api/v1/inventarios/movimientos?desde=0&limite=20` | Consultar historial (administrador o encargado) |
-| POST | `/api/v1/inventarios/movimientos` | Registrar inventario inicial o ajuste (encargado) |
-
-**Datos:** cada ruta responde con `{ datos: ... }`. Los listados utilizan snake_case, igual que el backend.
-
-## Comprobación
-
-```powershell
-npm test    # pruebas unitarias de cliente HTTP, permisos, validaciones y API
-npm run build    # compilación React/Vite
-```
-
-Se añadieron **17 pruebas** en `tests/catalogos.test.js`, además de las 17 pruebas de la Etapa 1 (total 34). Las pruebas de Node no necesitan conexión a Oracle ni modifican datos. Las comprobaciones funcionales de escritura deben hacerse en un esquema QA o con registros ficticios en un entorno de demostración.
-
-Revisa `PRUEBAS_MANUALES.md` para la validación por roles y `VALIDACION_LOCAL.md` para conocer las comprobaciones realizadas durante la preparación del paquete.
-
-## Sin cambios al alcance
-
-No se han añadido proveedores, compras, recetas, lotes, vencimientos, facturación, integración telefónica ni otras áreas fuera del enunciado. Los permisos y las operaciones siguen en el backend; React solo proporciona interfaz para funciones ya validadas.
+Quedan pendientes las pantallas de efectivo, planillas, activos fijos, solicitudes/entregas y auditoría. El backend de estos módulos sigue disponible, pero las páginas React aún muestran que están pendientes. No se han incluido compras, facturación, órdenes públicas, geolocalización, notificaciones ni gestión de proveedores.

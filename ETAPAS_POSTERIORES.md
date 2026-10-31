@@ -1,10 +1,14 @@
-# SIGFAR — Próximas etapas después de este paquete
+# SIGFAR — Etapas pendientes del frontend
 
-- **Completada para entrega/validación:** React + Vite, autenticación y navegación por rol, pantallas funcionales de sucursales, medicamentos e inventarios.
-- **Siguiente:** Transferencias entre sucursales (registro, despacho, recepción e historial), consumiendo los cinco endpoints v1.4 existentes.
-- **Después:** Efectivo, planillas y activos fijos.
-- **Después:** Solicitudes de medicamentos, coordinación, reservas, despacho y entrega.
-- **Después:** Auditoría centralizada y pruebas integrales de UI.
-- **Final:** Uso de un servicio en la nube y comprobación integral del prototipo.
+Completadas (según validación del usuario): Etapa 1, autenticación y navegación; Etapa 2, sucursales, medicamentos e inventarios.
 
-No se implementan nuevos módulos ni se modifica el esquema Oracle XE.
+La **Etapa 3** entrega el módulo de transferencias. Queda pendiente de comprobación funcional en navegador y Oracle locales.
+
+Próximos trabajos, con el mismo backend validado y sin extender el alcance:
+
+1. **Etapa 4:** pantallas de efectivo, gastos de planilla y activos fijos.
+2. **Etapa 5:** solicitudes de medicamentos, disponibilidad, reservas y entregas.
+3. **Etapa 6:** auditoría centralizada y pruebas de integración del frontend.
+4. **Etapa 7:** despliegue en un servicio de nube, con comprobaciones de extremo a extremo.
+
+No se incorporarán portal público, facturación electrónica, proveedores, mapa GPS ni funcionalidades ajenas al enunciado universitario.

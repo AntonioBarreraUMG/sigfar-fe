@@ -1,50 +1,56 @@
-# Casos de aceptación local — Frontend Etapa 2
+# SIGFAR — Pruebas funcionales manuales · Frontend Etapa 3
 
-Usa datos de demostración o un esquema de QA para las pruebas con escritura. El objetivo es comprobar la UI real conectada al backend v1.4, sin reejecutar los scripts de carga originales.
+Realiza las pruebas de escritura **solo en un entorno de demostración o QA** y con datos ficticios. Mantén un respaldo de los datos iniciales. Todas las peticiones ejecutadas desde React se registran en el backend contra Oracle XE.
 
-## Autenticación y navegación (regresión Etapa 1)
+## Preparación
 
-1. `ADMIN_CENTRAL`: iniciar sesión, recargar página, entrar a `/sucursales`, `/medicamentos`, `/inventarios` y cerrar sesión.
-2. `ENCARGADO`: iniciar sesión y comprobar que su menú no muestra auditoría centralizada.
-3. `COORD_ENTREGAS`: iniciar sesión y comprobar que no tiene acceso a transferencias ni movimientos de inventario.
-4. Intentar visitar un módulo sin autorización directamente mediante la URL: debe mostrarse «Sin acceso».
+- Backend v1.4 funcionando (`/api/v1/health` responde correctamente).
+- Frontend Etapa 3 iniciado en `http://127.0.0.1:5173`.
+- Un administrador y dos encargados asignados a sucursales distintas.
+- Un medicamento activo con existencias disponibles suficientes en la sucursal de origen.
+- Anotar desde el administrador el ID de la sucursal destino que esté activa (pantalla *Sucursales*).
 
-## Sucursales
+## Escenarios
 
-5. Como administrador, listar sucursales desde Oracle; filtrar Activas/Inactivas y usar Actualizar.
-6. Crear una sucursal ficticia con código nuevo, departamento/municipio y tiempo válido; verificar que aparece en la lista y en DBeaver.
-7. Editar nombre/tiempo de esa sucursal; comprobar que cambia en pantalla y que el backend registra auditoría.
-8. Intentar tiempo fraccionario/negativo y código demasiado largo: debe rechazarse antes de llamar a la API.
-9. Como encargado, consultar solo la sucursal asignada; comprobar ausencia de botones Crear y Editar.
-10. Como coordinador, consultar sucursales y verificar ausencia de operaciones de escritura.
+| ID | Usuario y acción | Resultado esperado |
+|---|---|---|
+| T01 | Administrador entra en Transferencias | Ve historial de toda la empresa, filtros por sucursal/estado y detalle; no ve botón «Nueva transferencia». |
+| T02 | Encargado de origen entra en Transferencias | Ve únicamente transferencias en las que participa su sucursal. |
+| T03 | Coordinador intenta visitar `/transferencias` | Recibe pantalla «Sin acceso»; no aparece la opción en su menú. |
+| T04 | Encargado crea una transferencia con origen propio, ID destino distinto y medicamento activo | Se obtiene nueva transferencia `REGISTRADA`, con detalle correcto. No cambia el inventario todavía. |
+| T05 | Encargado intenta usar mismo medicamento dos veces | Validación local rechaza el registro sin envío HTTP. |
+| T06 | Encargado usa destino igual a origen o cantidad fraccionaria/cero | Validación local rechaza. |
+| T07 | Encargado usa ID de sucursal destino inexistente/inactiva | El backend rechaza la solicitud y se muestra el mensaje de error. |
+| T08 | Encargado de origen despacha una transferencia registrada | Se solicita confirmación. Al aceptar queda `EN_TRANSITO` y disminuye el inventario del origen. |
+| T09 | Usuario cancela la confirmación de despacho | No se realiza petición ni se modifican existencias. |
+| T10 | Encargado del origen intenta recibir una transferencia | No se muestra el botón «Confirmar recepción». |
+| T11 | Encargado de destino accede a la misma transferencia en tránsito | Ve botón «Confirmar recepción», y no ve «Confirmar despacho». |
+| T12 | Encargado de destino confirma la recepción | El estado es `RECIBIDA` y aumenta inventario de destino. |
+| T13 | Consultar la transferencia ya recibida | No hay botones de despacho o recepción; no existe doble recepción desde interfaz. |
+| T14 | Intentar despachar una cantidad superior al disponible | El backend rechaza la operación (conflicto); estado e inventario no cambian. |
+| T15 | Cambiar filtro por estado y navegar páginas | Los resultados coinciden; «Actualizar» recarga los registros. |
+| T16 | Abrir detalle desde historial | Muestra origen, destino, estado, fechas, medicamentos y cantidades. |
+| T17 | Navegar a Sucursales, Medicamentos e Inventarios | Se mantienen operativos los módulos ya validados de la Etapa 2. |
+| T18 | Cerrar sesión y recargar navegador | Protecciones de sesión y navegación siguen funcionando. |
 
-## Medicamentos
+## Consultas de comprobación en DBeaver (opcional)
 
-11. Como administrador, listar medicamentos y filtrar activos/inactivos.
-12. Crear un medicamento ficticio con código nuevo y presentación; confirmar persistencia.
-13. Editar su nombre o estado; confirmar persistencia y auditoría.
-14. Repetir el código en otro medicamento: debe mostrarse el error de Oracle/backend sin bloquear la interfaz.
-15. Como encargado o coordinador, consultar el catálogo sin opciones de modificación.
+Para la transferencia creada en T04, sustituye `123` por su identificador real y consulta:
 
-## Inventario
+```sql
+SELECT id_transferencia, id_sucursal_origen, id_sucursal_destino,
+       estado, fecha_registro, fecha_despacho, fecha_recepcion
+FROM transferencia
+WHERE id_transferencia = 123;
 
-16. Como administrador, observar existente, reservado y disponible para diferentes farmacias; cambiar filtros por sucursal/medicamento y comprobar valores en DBeaver.
-17. Como coordinador, consultar existencias sin acceso a historial ni botón Registrar movimiento.
-18. Como encargado, comprobar que solo aparece el inventario de su sucursal.
-19. Registrar `INICIAL` para el medicamento ficticio de la prueba 12 (que no tenga inventario en la sucursal de prueba). Comprobar `POST /inventarios/movimientos` y actualización del saldo.
-20. Registrar `AJUSTE_ENTRADA` con motivo y comprobar aumento de existencias.
-21. Registrar `AJUSTE_SALIDA` con motivo y cantidad disponible; comprobar disminución.
-22. Intentar salida superior a las unidades disponibles; debe devolver conflicto y las existencias no deben variar.
-23. Intentar un segundo `INICIAL` en la misma sucursal y medicamento: debe devolver conflicto.
-24. Consultar Historial de movimientos y confirmar tipo, cantidad, motivo y fecha correctos.
-25. Intentar ajuste sin motivo o cantidad decimal: debe mostrarse un mensaje de validación.
-26. Repetir consultas/paginación: no deben borrarse registros ni inventarse valores de conteo general.
-27. Desconectar temporalmente el backend, pulsar Actualizar: debe mostrarse error y opción Reintentar.
+SELECT id_transferencia, id_medicamento, cantidad
+FROM detalle_transferencia
+WHERE id_transferencia = 123;
 
-## Revisión de resultados en DBeaver
+SELECT id_sucursal, id_medicamento, cantidad_existente, cantidad_reservada
+FROM inventario_sucursal
+WHERE id_medicamento = 1
+ORDER BY id_sucursal;
+```
 
-Consulta las tablas `SUCURSAL`, `MEDICAMENTO`, `INVENTARIO_SUCURSAL`, `MOVIMIENTO_INVENTARIO` y `REGISTRO_AUDITORIA` por los códigos/IDs de prueba para confirmar los resultados. Utiliza también las consultas de conciliación incluidas en el paquete de pruebas del backend v1.4.
-
-## Criterio de aceptación
-
-No debe fallar ninguna operación crítica de consulta, creación/modificación autorizada o registro de movimiento. La autenticación y los permisos deben continuar funcionando como en la Etapa 1.
+El último `id_medicamento = 1` es solo un ejemplo: reemplázalo por el medicamento utilizado realmente. Puedes volver a ejecutar `03_verificacion.sql` de las pruebas SQL de SIGFAR, teniendo en cuenta que algunas comparaciones con cantidades iniciales exactas dejarán de representar el conjunto original después de nuevas transferencias; utiliza en su lugar las conciliaciones que calculan saldos a partir de movimientos.

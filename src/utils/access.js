@@ -15,15 +15,15 @@ const TODOS = [ROLES.ADMIN, ROLES.ENCARGADO, ROLES.COORD];
 const GESTION = [ROLES.ADMIN, ROLES.ENCARGADO];
 
 export const MODULOS = Object.freeze([
-  { id: 'sucursales', nombre: 'Sucursales', ruta: '/sucursales', icono: 'store', roles: TODOS, etapa: 3, descripcion: 'Puntos de venta y ubicaciones.' },
-  { id: 'medicamentos', nombre: 'Medicamentos', ruta: '/medicamentos', icono: 'pill', roles: TODOS, etapa: 3, descripcion: 'Catálogo de medicamentos.' },
-  { id: 'inventarios', nombre: 'Inventarios', ruta: '/inventarios', icono: 'boxes', roles: TODOS, etapa: 3, descripcion: 'Existencias y disponibilidad por sucursal.' },
-  { id: 'transferencias', nombre: 'Transferencias', ruta: '/transferencias', icono: 'arrows', roles: GESTION, etapa: 4, descripcion: 'Movimientos entre sucursales.' },
-  { id: 'efectivo', nombre: 'Efectivo', ruta: '/efectivo', icono: 'wallet', roles: GESTION, etapa: 5, descripcion: 'Ingresos, egresos y flujo neto.' },
-  { id: 'planillas', nombre: 'Planillas', ruta: '/planillas', icono: 'receipt', roles: GESTION, etapa: 5, descripcion: 'Gastos por sucursal y período.' },
-  { id: 'activos', nombre: 'Activos fijos', ruta: '/activos', icono: 'briefcase', roles: GESTION, etapa: 5, descripcion: 'Registro y valoración de activos.' },
-  { id: 'solicitudes', nombre: 'Solicitudes y entregas', ruta: '/solicitudes', icono: 'truck', roles: TODOS, etapa: 6, descripcion: 'Disponibilidad y coordinación de entregas.' },
-  { id: 'auditoria', nombre: 'Auditoría', ruta: '/auditoria', icono: 'shield', roles: [ROLES.ADMIN], etapa: 7, descripcion: 'Trazabilidad centralizada de operaciones.' }
+  { id: 'sucursales', nombre: 'Sucursales', ruta: '/sucursales', icono: 'store', roles: TODOS, etapa: 2, descripcion: 'Puntos de venta y ubicaciones.' },
+  { id: 'medicamentos', nombre: 'Medicamentos', ruta: '/medicamentos', icono: 'pill', roles: TODOS, etapa: 2, descripcion: 'Catálogo de medicamentos.' },
+  { id: 'inventarios', nombre: 'Inventarios', ruta: '/inventarios', icono: 'boxes', roles: TODOS, etapa: 2, descripcion: 'Existencias y disponibilidad por sucursal.' },
+  { id: 'transferencias', nombre: 'Transferencias', ruta: '/transferencias', icono: 'arrows', roles: GESTION, etapa: 3, descripcion: 'Movimientos entre sucursales.' },
+  { id: 'efectivo', nombre: 'Efectivo', ruta: '/efectivo', icono: 'wallet', roles: GESTION, etapa: 4, descripcion: 'Ingresos, egresos y flujo neto.' },
+  { id: 'planillas', nombre: 'Planillas', ruta: '/planillas', icono: 'receipt', roles: GESTION, etapa: 4, descripcion: 'Gastos por sucursal y período.' },
+  { id: 'activos', nombre: 'Activos fijos', ruta: '/activos', icono: 'briefcase', roles: GESTION, etapa: 4, descripcion: 'Registro y valoración de activos.' },
+  { id: 'solicitudes', nombre: 'Solicitudes y entregas', ruta: '/solicitudes', icono: 'truck', roles: TODOS, etapa: 5, descripcion: 'Disponibilidad y coordinación de entregas.' },
+  { id: 'auditoria', nombre: 'Auditoría', ruta: '/auditoria', icono: 'shield', roles: [ROLES.ADMIN], etapa: 6, descripcion: 'Trazabilidad centralizada de operaciones.' }
 ]);
 
 export function modulosPorRol(rol) {

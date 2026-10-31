@@ -1,8 +1,10 @@
-# Validación durante la preparación de la Etapa 2
+# SIGFAR — Evidencia de comprobación · Frontend Etapa 3
 
-- Se revisaron las rutas reales de sucursales, medicamentos e inventarios en el código fuente del backend SIGFAR v1.4.
-- Se preservó el cliente HTTP, sesión, autenticación y menú de la Etapa 1.
-- Las 34 pruebas Node terminaron correctamente (`npm test`): 17 de la Etapa 1 y 17 nuevas de la Etapa 2.
-- 25 archivos `src/**/*.js|jsx` pasaron un análisis sintáctico/transpilación individual con TypeScript y se comprobaron las rutas de importación locales.
-- No se pudo realizar `npm install` en el entorno de preparación (agotó el tiempo); en consecuencia, no se ejecutó `vite build` ni una prueba real de navegador/Oracle local. Esas comprobaciones deberán ejecutarse en tu computadora.
-- La funcionalidad no ha sido probada contra la instancia privada `127.0.0.1:1521/XEPDB1` del usuario; la API v1.4 ya había sido validada por él.
+- Pruebas unitarias de Node: **54 aprobadas**, 0 fallidas (`npm test`). Incluye 20 casos nuevos.
+- Análisis sintáctico de archivos JS/JSX mediante parser TypeScript: **32 archivos** con sintaxis correcta.
+- Referencias a módulos locales: comprobación de existencia realizada.
+- Backend: **no modificado**. Oracle XE: **no modificado**.
+
+**Limitaciones del entorno de construcción:** no se pudo descargar `react`, `vite` ni otros paquetes npm debido a que la resolución de `registry.npmjs.org` falló (`EAI_AGAIN`). Por lo tanto, aquí **no se ejecutó `npm run build`, ni se inició Vite ni se verificaron flujos HTTP reales contra Oracle local**. El usuario debe comprobar la compilación, el navegador y las operaciones contra su backend validado, siguiendo `PRUEBAS_MANUALES.md`.
+
+**Nota sobre el ID destino:** el API limita `GET /sucursales` al propio registro para el encargado. El formulario acepta la entrada manual del identificador de la sucursal destino y deja al servidor validar su existencia/actividad. No se modificaron los permisos.
