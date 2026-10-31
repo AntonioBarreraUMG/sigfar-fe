@@ -1,12 +1,8 @@
-# Validación realizada en el entorno de preparación
+# Validación durante la preparación de la Etapa 2
 
-**Alcance de los resultados:** pruebas de código sin conexión a tu Oracle local.
-
-- `npm test`: 17 pruebas automatizadas aprobadas.
-- Análisis sintáctico de JavaScript y JSX con el parser de TypeScript instalado en el entorno: sin errores.
-- Resolución de referencias locales de importación: sin rutas faltantes.
-- Análisis sintáctico de `src/styles/global.css` con PostCSS: correcto.
-- Contrato de autenticación cotejado con el código del backend SIGFAR v1.4 real (`auth/login`, `auth/me`, estructura `usuario`, roles y error JSON).
-- ZIP del proyecto: integridad verificada después de empaquetar.
-
-**No se ha ejecutado aquí:** `npm install`, `npm run build`, pruebas visuales del navegador ni llamadas al backend de tu computadora. Estas pruebas requieren las dependencias npm y tu instancia local de Node/Oracle. Las instrucciones y los casos manuales están en `LEEME.md` y `PRUEBAS_MANUALES.md`.
+- Se revisaron las rutas reales de sucursales, medicamentos e inventarios en el código fuente del backend SIGFAR v1.4.
+- Se preservó el cliente HTTP, sesión, autenticación y menú de la Etapa 1.
+- Las 34 pruebas Node terminaron correctamente (`npm test`): 17 de la Etapa 1 y 17 nuevas de la Etapa 2.
+- 25 archivos `src/**/*.js|jsx` pasaron un análisis sintáctico/transpilación individual con TypeScript y se comprobaron las rutas de importación locales.
+- No se pudo realizar `npm install` en el entorno de preparación (agotó el tiempo); en consecuencia, no se ejecutó `vite build` ni una prueba real de navegador/Oracle local. Esas comprobaciones deberán ejecutarse en tu computadora.
+- La funcionalidad no ha sido probada contra la instancia privada `127.0.0.1:1521/XEPDB1` del usuario; la API v1.4 ya había sido validada por él.
