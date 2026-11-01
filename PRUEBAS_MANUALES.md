@@ -1,67 +1,49 @@
-# SIGFAR — Pruebas manuales de aceptación · Etapa 5
+# SIGFAR — Casos de aceptación · Frontend Etapa 6
 
-**Requisitos**: backend v1.4 conectado a Oracle XE; frontend Etapa 5; cuentas de los tres roles; datos ficticios; inventario suficiente en al menos una farmacia y un municipio coincidente. Se recomienda un esquema QA para las operaciones de escritura.
+**Antes:** backend v1.4 funcionando en 127.0.0.1:3000; frontend en 127.0.0.1:5173; usuario administrador disponible. Estas comprobaciones de auditoría son **solo lectura** y no deben modificar Oracle XE.
 
-## Preparación
+| Caso | Pasos | Resultado esperado |
+|---|---|---|
+| AUD-01 | Acceder como administrador y abrir `/auditoria`. | La pantalla carga historial y resumen desde la API. |
+| AUD-02 | Abrir menú como encargado. | No aparece Auditoría. |
+| AUD-03 | Abrir `/auditoria` directamente como encargado. | Pantalla de acceso restringido; no se presenta el historial. |
+| AUD-04 | Abrir `/auditoria` como coordinador. | Acceso restringido. |
+| AUD-05 | Entrar sin iniciar sesión a `/auditoria`. | Solicita autenticación. |
+| AUD-06 | Comparar total del historial con `GET /api/v1/auditoria/resumen`. | Totales coherentes para los mismos filtros. |
+| AUD-07 | Filtrar por una sucursal con operaciones. | Lista y resumen muestran sus operaciones; se excluyen los registros globales sin sucursal. |
+| AUD-08 | Limpiar filtros. | Regresan las operaciones de todas las sucursales, incluidas las globales. |
+| AUD-09 | Filtrar `entidad = TRANSFERENCIA`. | Solo aparecen registros cuya entidad es `TRANSFERENCIA`. |
+| AUD-10 | Filtrar por la acción de una operación real. | Los resultados coinciden con la acción buscada. |
+| AUD-11 | Filtrar por ID de usuario existente. | Los resultados se restringen al responsable. |
+| AUD-12 | Filtrar por ID del registro afectado. | Se muestran registros de ese ID; si corresponde a varias entidades, se pueden diferenciar por entidad. |
+| AUD-13 | Establecer fecha desde/hasta válidas. | Solo aparecen operaciones del período solicitado. |
+| AUD-14 | Introducir un rango de fechas invertido. | Mensaje de validación; no se envía una búsqueda inválida. |
+| AUD-15 | Introducir entidad `TRANSFERENCIA;DELETE`. | Mensaje de validación; no se envía una búsqueda inválida. |
+| AUD-16 | Aplicar filtros sin coincidencias. | Estado vacío, resumen cero y sin datos inventados. |
+| AUD-17 | Consultar historial con más de 20 registros. | Se muestran 20 por página; Anterior/Siguiente funciona y refleja el total. |
+| AUD-18 | Abrir detalle de una operación. | Usuario, entidad, acción, fecha, sucursal e ID coinciden con el historial. |
+| AUD-19 | Revisar detalle con cambios de estado. | Si la auditoría registró `datos_anteriores` y `datos_nuevos`, se muestran ambos; si son nulos, se indica que no hay datos. |
+| AUD-20 | Consultar operación global (sin sucursal). | Se indica expresamente que es una operación global. |
+| AUD-21 | Pulsar Actualizar. | Se vuelven a consultar los datos con los filtros vigentes. |
+| AUD-22 | Desconectar temporalmente el backend y consultar. | Se muestra error de conexión; Reintentar funciona al reconectar. |
+| AUD-23 | Vencer o invalidar el token de la sesión. | El control de sesión redirige al acceso de acuerdo con el comportamiento ya validado. |
+| AUD-24 | Inspeccionar la vista. | No hay botones de creación, edición o eliminación de registros de auditoría. |
+| AUD-25 | Regresar a transferencias, finanzas y solicitudes. | Las pantallas anteriores continúan funcionando. |
 
-1. Verifica la respuesta de `http://127.0.0.1:3000/api/v1/health`.
-2. Ejecuta `npm test` y `npm run build` en el frontend.
-3. Comprueba que React carga en `http://127.0.0.1:5173`.
-4. Identifica una farmacia activa, su departamento/municipio exactos y medicamentos activos disponibles mediante los módulos ya validados.
-
-## Casos de aceptación
-
-| ID | Rol | Acción | Resultado esperado |
-|---|---|---|---|
-| S-01 | Administrador | Entrar en Solicitudes | Se muestra la lista sin botones de escritura. |
-| S-02 | Coordinador | Entrar en Solicitudes | Aparece **Nueva solicitud**. |
-| S-03 | Encargado | Entrar en Solicitudes | Solo ve solicitudes asignadas a su farmacia. |
-| S-04 | Coordinador | Registrar cliente, municipio y 2 medicamentos activos | Se crea una solicitud `PENDIENTE`; no se descuenta ni reserva inventario. |
-| S-05 | Coordinador | Usar **Consultar disponibilidad** con inventario suficiente | Muestra sucursal elegible y tiempo de entrega configurado. |
-| S-06 | Coordinador | Consultar disponibilidad sin cobertura | Mensaje indicando que no hay farmacias elegibles; no se crean reservas. |
-| S-07 | Coordinador | Registrar 2 renglones del mismo medicamento | El formulario rechaza la solicitud. |
-| S-08 | Coordinador | Registrar cantidad cero o fraccionaria | Rechazo de validación sin petición de escritura. |
-| S-09 | Coordinador | Registrar medicamento inactivo | No se ofrece para seleccionar; no se puede enviar. |
-| S-10 | Coordinador | Abrir detalle pendiente y sus opciones | Se ven sucursales elegibles, método de pago y acción de confirmar. |
-| S-11 | Coordinador | Confirmar con efectivo/tarjeta y sucursal elegible | Estado `CONFIRMADA`; se generan reservas sin descontar existencias. |
-| S-12 | Coordinador | Confirmar de nuevo una solicitud ya confirmada | Acción no disponible; el servidor rechaza un intento externo duplicado. |
-| S-13 | Encargado de otra sucursal | Intentar consultar o despachar la solicitud | Acceso denegado por el backend. |
-| S-14 | Encargado asignado | Despachar solicitud confirmada | Estado `DESPACHADA`; las reservas se consumen y el inventario existente se descuenta una vez. |
-| S-15 | Encargado asignado | Intentar segundo despacho | No hay botón habilitado; una repetición HTTP se rechaza. |
-| S-16 | Coordinador o encargado asignado | Marcar solicitud despachada como entregada | Estado `ENTREGADA` y fecha real registrada. |
-| S-17 | Coordinador | Cancelar una solicitud pendiente | Estado `CANCELADA`, sin inventario comprometido. |
-| S-18 | Coordinador | Cancelar una solicitud confirmada sin despacho | Estado `CANCELADA` y reservas liberadas. |
-| S-19 | Coordinador | Intentar cancelar una solicitud despachada | Acción no disponible; el backend lo rechaza. |
-| S-20 | Administrador | Filtrar por estado y farmacia | Resultados consistentes con el backend, paginados. |
-| S-21 | Coordinador | Ver detalle de solicitud tardía (si existe) | Se muestra el indicador tardía según valor devuelto por Oracle. |
-| S-22 | Todos | Recargar la página o cambiar de módulo | La sesión se verifica y los registros vuelven a consultarse. |
-| S-23 | Todos | Interrumpir temporalmente Node.js | Aparece error de conexión sin declarar una operación exitosa. |
-| S-24 | Todos | Revisar las vistas de etapas 1–4 | Continúan operativas las funciones ya validadas. |
-| S-25 | Coordinador | Cambiar un medicamento después de consultar disponibilidad | Se invalida la previsualización anterior; requiere una nueva consulta. |
-| S-26 | Administrador | Ver detalle de solicitud confirmada | Puede leer pago, fechas, medicamentos y estado de reservas sin cambiar datos. |
-
-## Verificaciones SQL orientativas en DBeaver
-
-Tras ejecutar operaciones con datos ficticios, consulta los registros por su ID:
+## Referencia para DBeaver (solo lectura)
 
 ```sql
-SELECT id_solicitud, estado, id_sucursal_asignada, forma_pago,
-       fecha_estimada_entrega, fecha_despacho, fecha_entrega_real
-FROM solicitud_entrega WHERE id_solicitud = :id_solicitud;
-
-SELECT d.id_medicamento, d.cantidad, r.estado AS estado_reserva,
-       r.cantidad AS cantidad_reservada
-FROM detalle_solicitud d
-LEFT JOIN reserva_inventario r ON r.id_detalle_solicitud = d.id_detalle_solicitud
-WHERE d.id_solicitud = :id_solicitud;
-
-SELECT id_movimiento, tipo, cantidad, id_sucursal, id_medicamento
-FROM movimiento_inventario
-WHERE id_detalle_solicitud IN (
-  SELECT id_detalle_solicitud FROM detalle_solicitud WHERE id_solicitud = :id_solicitud
-);
+SELECT COUNT(*) AS total FROM registro_auditoria;
+SELECT entidad, COUNT(*) AS cantidad FROM registro_auditoria GROUP BY entidad ORDER BY cantidad DESC;
+SELECT id_sucursal, COUNT(*) AS cantidad FROM registro_auditoria GROUP BY id_sucursal ORDER BY cantidad DESC;
+SELECT id_auditoria, entidad, accion, id_registro, fecha_evento
+FROM registro_auditoria
+ORDER BY fecha_evento DESC, id_auditoria DESC
+FETCH FIRST 20 ROWS ONLY;
 ```
 
-DBeaver solicitará el valor de `:id_solicitud`. Estas son consultas de **solo lectura**. El historial de auditoría puede revisarse igualmente desde la tabla `REGISTRO_AUDITORIA` hasta que esté disponible la pantalla de la Etapa 6.
+Los totales de SQL corresponden a **todos** los registros. Para compararlos con la UI, limpia los filtros. La API puede mostrar más datos del usuario y de la sucursal porque realiza las uniones necesarias.
 
-**Aceptación**: considera validada la Etapa 5 solo cuando la compilación y los flujos operativos relevantes se hayan comprobado desde el navegador conectado a tu backend y Oracle XE reales.
+## Criterio de aceptación
+
+La Etapa 6 se considera validada después de comprobar con el administrador la carga de historial, resúmenes, filtros y detalles, confirmar los rechazos de otros roles y verificar que los módulos anteriores mantienen su funcionamiento. La aprobación final requiere ejecución real en tu equipo.

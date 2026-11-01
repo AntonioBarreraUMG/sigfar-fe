@@ -1,21 +1,36 @@
-# SIGFAR — Frontend React + Vite · Etapa 5
+# SIGFAR — Frontend React + Vite · Etapa 6: Auditoría centralizada
 
-**Entregable acumulativo**: incluye las etapas 1–4 ya validadas por el estudiante más el módulo de **Solicitudes y Entregas**.
+**Entrega acumulativa:** etapas 1–5 validadas por el estudiante + módulo final de consulta de auditoría. **No contiene modificaciones del backend ni de la base de datos.**
 
-## Compatibilidad
+## Requisitos y compatibilidad
 
-- Backend: **SIGFAR v1.4** (ya validado), sin modificaciones.
-- Base de datos: **Oracle XE 21c / XEPDB1**, sin nuevos scripts ni cambios a las 15 tablas.
-- Frontend: React 19 + Vite 7 + React Router 7 (Node.js **>= 20.19**).
-- Proxy Vite existente: `/api` → `127.0.0.1:3000`; frontend en `127.0.0.1:5173`.
-- No se agregaron servicios externos ni módulos fuera del enunciado.
+- Backend **SIGFAR v1.4**, Node.js + Express, en `http://127.0.0.1:3000`, conectado a Oracle XE (`XEPDB1`).
+- Frontend **React 19 / React Router 7 / Vite 7**. Node.js **20.19 o posterior**.
+- Vite mantiene el proxy local `/api` hacia el puerto 3000. No hay conexión directa de React con Oracle.
+- No se necesitan credenciales Oracle ni secretos del backend en el frontend.
+- Usa los tres endpoints de **solo lectura** del backend existente:
 
-## Instalación en Windows / PowerShell
+| Operación | Endpoint (base `/api/v1`) | Permisos |
+|---|---|---|
+| Historial con filtros, paginado y total | `GET /auditoria/registros` | Solo administrador central |
+| Resumen por entidad y sucursal | `GET /auditoria/resumen` | Solo administrador central |
+| Detalle con valores anteriores/posteriores | `GET /auditoria/registros/:id` | Solo administrador central |
 
-1. Haz copia de seguridad de tu carpeta de la Etapa 4; descomprime este ZIP en otra carpeta.
-2. Mantén el backend v1.4 original conectado a Oracle XE mediante tu archivo `.env`.
-3. Abre una terminal en el backend y ejecuta `npm run dev`.
-4. Abre otra terminal en esta carpeta y ejecuta:
+No se crean, actualizan ni eliminan registros de auditoría desde React. El backend sigue aplicando los controles de acceso. No se cambian las **15 tablas** de Oracle XE.
+
+## Actualización segura en Windows / PowerShell
+
+1. Conserva una copia de la carpeta de la Etapa 5, que ya tienes funcionando.
+2. Descomprime esta Etapa 6 **en una carpeta diferente**.
+3. Conserva la instalación y el `.env` original del backend v1.4; no debes ejecutar los scripts SQL de creación ni los datos de prueba.
+4. Inicia el backend en una terminal:
+
+```powershell
+cd C:\ruta\SIGFAR_Backend
+npm run dev
+```
+
+5. En otra terminal, dentro de esta nueva carpeta del frontend, ejecuta:
 
 ```powershell
 npm install
@@ -24,67 +39,42 @@ npm run build
 npm run dev
 ```
 
-5. Abre `http://127.0.0.1:5173` e inicia sesión con las credenciales de demostración que ya probaste.
+6. Visita `http://127.0.0.1:5173`, inicia sesión como **administrador central** y abre **Auditoría** en el menú lateral. El nombre de la ruta es `/auditoria`.
 
-**No ejecutes de nuevo los archivos de creación de tablas ni de datos de prueba.** No copies archivos `.env` del backend dentro del frontend. El servidor de Vite resuelve la comunicación `/api` automáticamente durante el desarrollo.
+> Importante: no necesitas copiar archivos manualmente sobre la Etapa 5. Este ZIP incluye el frontend completo acumulativo. Si Vite utiliza otro puerto por configuración local, utiliza la URL que muestre la terminal.
 
-## Qué agrega la Etapa 5
+## Funciones agregadas
 
-El área **Solicitudes y entregas** (ruta `/solicitudes`) permite:
+- Tabla de operaciones con fecha, sucursal, usuario, entidad, acción, registro afectado y enlace para ver el detalle.
+- Filtros combinables por sucursal, ID de usuario, entidad, acción, ID de registro afectado, fecha inicial y fecha final.
+- Historial ordenado por el backend (más reciente primero), con total real y paginación de 20 filas.
+- Resumen de operaciones por entidad y por sucursal, incluidas las operaciones globales sin sucursal.
+- Detalle de la operación, con datos anteriores y posteriores, como JSON formateado o texto histórico (si existen). Su presentación es **solo texto**, sin insertar HTML de la bitácora.
+- Manejo de respuestas vacías, interrupciones de conexión, errores HTTP y botones de reintento.
+- Ruta y menú exclusivos de `ADMIN_CENTRAL`; encargado y coordinador no acceden a la vista ni a sus endpoints.
 
-- Consultar solicitudes existentes, su estado, farmacia asignada, municipio, fechas e indicador de entrega tardía.
-- Filtrar por estado y, para administradores y coordinadores, por farmacia asignada.
-- Consultar el detalle, medicamentos, cantidades y estado de reservas.
-- Como coordinador: registrar una solicitud pendiente, con entre 1 y 20 medicamentos; consultar disponibilidad por departamento y municipio; consultar opciones de la solicitud; confirmar una farmacia elegible y método de pago; cancelar mientras esté pendiente o confirmada; registrar la entrega una vez despachada.
-- Como encargado de la sucursal asignada: consultar solicitudes de su sucursal, despachar reservas y registrar entregas despachadas.
-- Como administrador: consultar las solicitudes y farmacias elegibles sin modificar operaciones.
+**Limitaciones deliberadas:** no se incorporan exportación de PDF/Excel, edición de auditoría, eliminación de registros, reportes comerciales ni nuevos filtros del backend. Las opciones de filtrado respetan las admitidas por `construirFiltrosAuditoria()`.
 
-**Reglas principales**: la disponibilidad es de lectura; registrar solicitud no reserva inventario; confirmar reserva; despachar descuenta existencias y consume reservas; cancelar antes del despacho libera reservas; entregar registra la finalización. La API vuelve a validar disponibilidad, autorizaciones y cambios de estado.
+## Validación y evidencias
 
-## Endpoints utilizados
+- `npm test`: tests de regresión de las etapas 1–5 + 26 tests nuevos de auditoría (132 pruebas en total).
+- `npm run build`: compilación de producción que **debes ejecutar localmente**.
+- `PRUEBAS_MANUALES.md`: casos para validar desde navegador contra tu Oracle XE.
+- `VALIDACION_LOCAL.md`: alcance exacto de las comprobaciones ejecutadas al preparar este ZIP.
 
-| Acción | Método | Endpoint (relativo a `/api/v1`) | Rol que ejecuta |
-|---|---|---|---|
-| Listado paginado | GET | `/solicitudes?desde=0&limite=20` | Todos; encargado solo su sucursal |
-| Detalle | GET | `/solicitudes/:id` | Usuarios autorizados |
-| Disponibilidad | POST | `/solicitudes/disponibilidad` | Coordinador o administrador |
-| Registro | POST | `/solicitudes` | Coordinador |
-| Opciones de una solicitud | GET | `/solicitudes/:id/opciones` | Coordinador o administrador |
-| Confirmación/reserva | POST | `/solicitudes/:id/confirmar` | Coordinador |
-| Despacho | POST | `/solicitudes/:id/despachar` | Encargado asignado |
-| Entrega | POST | `/solicitudes/:id/entregar` | Coordinador o encargado asignado |
-| Cancelación | POST | `/solicitudes/:id/cancelar` | Coordinador |
+Los tests usan respuestas HTTP simuladas y no escriben en Oracle. Las verificaciones en navegador y la compilación final quedan para tu equipo, donde ya funciona el backend.
 
-Los tres últimos endpoints reciben un POST **sin cuerpo JSON**. La confirmación recibe solo `{ "id_sucursal": 1, "forma_pago": "EFECTIVO" }`. El registro recibe datos básicos de cliente, ubicación y detalles con `{ "id_medicamento": n, "cantidad": n }`.
+## Archivos nuevos o modificados
 
-## Uso sugerido de los roles
+- `src/pages/AuditoriaPage.jsx`: pantalla completa de auditoría.
+- `src/services/auditoriaApi.js`: cliente de los tres endpoints existentes.
+- `src/utils/auditoria.js`: validación de filtros, paginación y presentación segura de datos históricos.
+- `tests/auditoria.test.js`: 26 pruebas unitarias y de contrato HTTP nuevas.
+- `src/app/App.jsx`: activa el módulo de auditoría.
+- `src/components/Icon.jsx`, `src/styles/global.css`: icono de búsqueda y estilos.
+- `src/layouts/AppLayout.jsx`, `src/pages/HomePage.jsx`: actualización de la etapa y estado visual.
+- `package.json`: versión frontend `0.6.0`.
 
-1. Inicia sesión como **coordinador**, registra una solicitud y, si existe cobertura e inventario, confirma una farmacia elegible.
-2. Inicia sesión como **encargado** de la farmacia asignada, abre la solicitud confirmada y presiona **Confirmar despacho**.
-3. Inicia sesión como **coordinador** o el encargado asignado para completar la entrega.
-4. Inicia sesión como **administrador** y comprueba la consulta general. En la Etapa 6 se añadirá la pantalla de auditoría central.
+## Siguiente etapa del plan
 
-Para probar cancelaciones, crea otra solicitud pendiente o confirmada que aún no se haya despachado.
-
-## Pruebas
-
-- `npm test`: ejecuta pruebas unitarias y de contrato HTTP (etapas 1–5).
-- `npm run build`: compilación de producción de React/Vite.
-- `PRUEBAS_MANUALES.md`: verificación en navegador y Oracle XE.
-- `VALIDACION_LOCAL.md`: informe de pruebas que se pudieron ejecutar en el entorno de generación.
-
-**Importante**: las pruebas automatizadas del repositorio emplean simuladores de HTTP y verifican validaciones/contratos. No sustituyen las pruebas de interfaz y escritura realizadas con tu Oracle local. Haz esas operaciones con datos ficticios, preferentemente con el esquema QA del proyecto.
-
-## Archivos nuevos o actualizados
-
-- `src/pages/SolicitudesPage.jsx`: pantalla, detalle, disponibilidad, estados y formularios.
-- `src/services/solicitudesApi.js`: adaptador de los nueve endpoints existentes.
-- `src/utils/solicitudes.js`: permisos, conversiones y validación de datos.
-- `src/app/App.jsx`: conexión con la navegación existente.
-- `src/styles/global.css`: estilos acotados al módulo.
-- `src/layouts/AppLayout.jsx`: leyenda de etapa y progreso.
-- `tests/solicitudes.test.js`: 25 nuevos casos de validación y contrato.
-
-## Funcionalidades deliberadamente fuera del alcance
-
-No incluye portal público, telefonía, geolocalización GPS, rutas, cobro de tarjetas, facturación, ajuste de existencias desde la pantalla de entregas, creación de usuarios ni cambios al backend.
+**Pruebas integrales de navegador y despliegue en la nube.** Tras tu aprobación de esta pantalla, la fase siguiente comprobará los flujos entre los módulos, probará regresiones y preparará el despliegue con Oracle XE sin abrir públicamente el puerto de la base de datos.

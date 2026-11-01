@@ -20,12 +20,12 @@ export function HomePage() {
   }, [api]);
 
   return <div className="page-stack">
-    <div className="welcome-strip"><span className="welcome-dot"/> ENTORNO DE DEMOSTRACIÓN · FRONTEND ETAPA 3</div>
+    <div className="welcome-strip"><span className="welcome-dot"/> ENTORNO DE DEMOSTRACIÓN · FRONTEND ETAPA 6</div>
     <section className="hero-panel">
       <div className="hero-copy">
         <div className="eyebrow eyebrow--light">PANEL DE INICIO</div>
         <h1>Bienvenido a SIGFAR,<br/><span>{usuario.nombre.split(' ')[0]}.</span></h1>
-        <p>Tu espacio de trabajo para la gestión centralizada de farmacias. La base de datos y el backend ya han sido validados; las pantallas de sucursales, medicamentos, inventarios y transferencias ya están conectadas a Oracle XE.</p>
+        <p>Tu espacio de trabajo para la gestión centralizada de farmacias. La base de datos y el backend ya han sido validados; los nueve módulos del sistema ya cuentan con interfaz y utilizan los servicios existentes del backend.</p>
         <span className="hero-role"><Icon name="shield" size={17}/>{nombreRol(usuario.rol)}</span>
       </div>
       <div className="hero-pattern" aria-hidden="true"><span>+</span><span>+</span><span>+</span></div>
@@ -36,14 +36,14 @@ export function HomePage() {
       <div className="metric-card"><span className={`metric-icon ${estadoApi === 'disponible' ? 'metric-icon--mint' : 'metric-icon--amber'}`}><Icon name={estadoApi === 'disponible' ? 'activity' : 'alert'} size={21}/></span><div><strong>{estadoApi === 'disponible' ? 'API HTTP operativa' : estadoApi === 'consultando' ? 'Comprobando API…' : 'API sin respuesta'}</strong><small>Verificación mediante /api/v1/health</small></div></div>
     </section>
     <section className="modules-section" aria-labelledby="modules-heading">
-      <div className="section-heading"><div><div className="eyebrow">ÁREAS DE TRABAJO</div><h2 id="modules-heading">Módulos disponibles para tu rol</h2><p>Las primeras cuatro áreas son operativas. Las restantes se incorporarán en próximas etapas.</p></div><span className="section-count">{modulos.length} áreas</span></div>
+      <div className="section-heading"><div><div className="eyebrow">ÁREAS DE TRABAJO</div><h2 id="modules-heading">Módulos disponibles para tu rol</h2><p>Las áreas funcionales de tu rol ya están integradas con el backend.</p></div><span className="section-count">{modulos.length} áreas</span></div>
       <div className="module-grid">
         {modulos.map((modulo, i) => <Link to={modulo.ruta} className="module-card" key={modulo.id}>
           <div className="module-top"><span className={`module-icon module-icon--${i % 4}`}><Icon name={modulo.icono} size={24}/></span><span className="module-arrow"><Icon name="arrowRight" size={18}/></span></div>
-          <h3>{modulo.nombre}</h3><p>{modulo.descripcion}</p><span className="module-status"><span className="status-dot"/>{modulo.etapa <= 3 ? 'Interfaz operativa' : `Pendiente · Etapa ${modulo.etapa}`}</span>
+          <h3>{modulo.nombre}</h3><p>{modulo.descripcion}</p><span className="module-status"><span className="status-dot"/>{modulo.etapa <= 6 ? 'Interfaz operativa' : `Pendiente · Etapa ${modulo.etapa}`}</span>
         </Link>)}
       </div>
     </section>
-    <div className="inline-tip"><Icon name="info" size={19}/><span>Sucursales, Medicamentos, Inventarios y Transferencias ya consultan el backend real. Los demás módulos conservan sus pantallas de preparación hasta las próximas etapas.</span></div>
+    <div className="inline-tip"><Icon name="info" size={19}/><span>El frontend permite acceder a las funciones autorizadas del backend validado. Las pruebas integrales de navegador y el despliegue en la nube corresponden a las próximas etapas.</span></div>
   </div>;
 }

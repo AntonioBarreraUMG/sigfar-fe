@@ -1,8 +1,18 @@
-# Validación efectuada al generar SIGFAR Frontend — Etapa 5
+# SIGFAR — Validación realizada al preparar la Etapa 6
 
-- **106/106** pruebas automatizadas `node --test` aprobadas (81 anteriores + 25 nuevas).
-- **37** archivos JS/JSX de `src` pasaron revisión sintáctica con el parser de TypeScript y comprobación de todas las importaciones relativas.
-- La API se verificó comparando el código de `src/routes/solicitudes.routes.js`, `src/services/entregas.js` y `src/utils/entregas.js` del backend v1.4.
-- No se cambió ningún archivo del backend ni ningún script Oracle XE.
+## Sí verificado
 
-**Limitación de entorno**: `npm install` falló con `EAI_AGAIN` al consultar registry.npmjs.org. Por tanto, no fue posible ejecutar aquí la compilación `vite build`, montar React en navegador ni conectar con Oracle XE local. Queda pendiente validar `npm install`, `npm run build` y los 26 escenarios manuales en el equipo del estudiante.
+- **132 de 132 pruebas Node.js aprobadas** (`npm test`): 106 de regresión + 26 nuevas de auditoría.
+- Las pruebas nuevas cubren permisos, estructura del contrato HTTP de la API, filtros, fechas, paginación, textos históricos, errores 401/403 y ausencia de métodos de escritura.
+- Análisis sintáctico con el parser de TypeScript sobre los archivos JS y JSX del proyecto, sin errores encontrados.
+- Verificación de importaciones locales (`./` y `../`), sin rutas faltantes.
+- Los endpoints y los campos consumidos en React fueron contrastados con `src/routes/auditoria.routes.js` y `src/utils/auditoria.js` del backend SIGFAR v1.4.
+
+## No verificado aquí
+
+- `npm run build` de Vite: la instalación `npm install` falló por falta de acceso a registry.npmjs.org (`EAI_AGAIN`).
+- Ejecución visual y de interacción en navegador.
+- Conectividad HTTP hacia el Oracle XE instalado en la computadora del estudiante.
+- Validación de todos los escenarios manuales.
+
+Por ello, el código se entrega como **listo para pruebas de aceptación locales**, no como una versión desplegada o comprobada en producción.
