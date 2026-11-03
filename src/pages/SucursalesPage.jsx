@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
-import { DataPanel, ErrorNotice, Field, PageHeading, Pager, StatusLabel, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, Field, PageHeading, Pager, StatusLabel, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
 import { listApi, PAGE_LIMIT, saveCatalogoApi } from '../services/catalogosApi.js';
@@ -49,7 +49,7 @@ export function SucursalesPage() {
       <TableState loading={cargando} error={error} length={filas.length} emptyMessage="No hay sucursales con este estado."/>
       {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}</section>
     {!admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>Consulta habilitada para tu rol. La administración de sucursales corresponde al administrador central.</span></div>}
-    {panel !== null && admin && <DataPanel title={panel === 'nuevo' ? 'Registrar sucursal' : 'Editar sucursal'} subtitle="El tiempo estimado se usa para coordinar las entregas de medicamentos." onClose={cerrar}>
+    {panel !== null && admin && <DataPanel title={panel === 'nuevo' ? 'Registrar sucursal' : 'Editar sucursal'} subtitle="El tiempo estimado se usa para coordinar las entregas de medicamentos." onClose={cerrar} locked={guardando}>
       <form onSubmit={guardar} className="data-form"><div className="data-form-grid">
         <Field label="Código *" name="codigo" value={form.codigo} onChange={cambiar} maxLength={20} required/>
         <Field label="Nombre *" name="nombre" value={form.nombre} onChange={cambiar} maxLength={120} required/>

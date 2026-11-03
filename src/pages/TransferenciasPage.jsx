@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
 import { listOpcionesApi, PAGE_LIMIT } from '../services/catalogosApi.js';
@@ -10,6 +11,7 @@ import {
 } from '../services/transferenciasApi.js';
 import { fechaLocal } from '../utils/catalogos.js';
 import { ROLES } from '../utils/access.js';
+import { useConfirmation } from '../components/ConfirmDialog.jsx';
 import {
   ESTADOS_TRANSFERENCIA, ETIQUETAS_TRANSFERENCIA, accionPermitida,
   puedeCrearTransferencia, puedeConsultarDetalle, transferenciaPayload
@@ -27,9 +29,9 @@ function Estado({ valor }) {
 function DetalleTransferencia({ detalle, cargando, error, operando, onClose, onRetry, onAccion, usuario }) {
   return <DataPanel title={detalle ? `Transferencia #${detalle.id_transferencia}` : 'Detalle de transferencia'}
     subtitle="Los medicamentos se descuentan del origen al despachar y se agregan al destino al recibir."
-    onClose={() => { if (!operando) onClose(); }}>
+    onClose={() => { if (!operando) onClose(); }} readOnly locked={operando}>
     <ErrorNotice message={error} retry={onRetry}/>
-    {cargando && <div className="data-placeholder" role="status">Consultando detalle de transferencia…</div>}
+    {cargando && <LoadingIndicator label="Consultando detalle de transferencia…"/>}
     {!cargando && detalle && <>
       <div className="transfer-detail-grid">
         <div className="transfer-detail-cell"><span>Estado</span><Estado valor={detalle.estado}/></div>
@@ -54,6 +56,7 @@ function DetalleTransferencia({ detalle, cargando, error, operando, onClose, onR
 
 export function TransferenciasPage() {
   const { api, usuario } = useAuth();
+  const { requestConfirmation, confirmationModal } = useConfirmation();
   const encargado = puedeCrearTransferencia(usuario);
   const admin = usuario.rol === ROLES.ADMIN;
   const [desde, setDesde] = useState(0);
@@ -62,6 +65,7 @@ export function TransferenciasPage() {
   const [sucursales, setSucursales] = useState([]);
   const [medicamentos, setMedicamentos] = useState([]);
   const [errorOpciones, setErrorOpciones] = useState('');
+  const [cargandoOpciones, setCargandoOpciones] = useState(true);
   const [revisionOpciones, setRevisionOpciones] = useState(0);
   const [panel, setPanel] = useState(null);
   const [idSeleccionado, setIdSeleccionado] = useState(null);
@@ -79,14 +83,14 @@ export function TransferenciasPage() {
   // La selección de otra sucursal se realiza por ID, y se valida en el backend.
   useEffect(() => {
     const abort = new AbortController();
-    setErrorOpciones('');
+    setErrorOpciones(''); setCargandoOpciones(true);
     Promise.all([
       listOpcionesApi(api, 'sucursales', { signal: abort.signal }),
       listOpcionesApi(api, 'medicamentos', { signal: abort.signal })
     ]).then(([suc, med]) => {
-      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); }
+      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); setCargandoOpciones(false); }
     }).catch(e => {
-      if (!abort.signal.aborted) setErrorOpciones(e.message || 'No se pudieron cargar las opciones.');
+      if (!abort.signal.aborted) { setErrorOpciones(e.message || 'No se pudieron cargar las opciones.'); setCargandoOpciones(false); }
     });
     return () => abort.abort();
   }, [api, revisionOpciones]);
@@ -155,7 +159,7 @@ export function TransferenciasPage() {
     const texto = accion === 'despachar'
       ? '¿Confirmas el despacho? Se descontarán inmediatamente las cantidades del inventario de origen.'
       : '¿Confirmas la recepción? Se sumarán las cantidades al inventario de destino.';
-    if (!window.confirm(texto)) return;
+    if (!await requestConfirmation({ title: accion === 'despachar' ? 'Confirmar despacho' : 'Confirmar recepción', message: texto, confirmText: accion === 'despachar' ? 'Despachar medicamentos' : 'Confirmar recepción' })) return;
     setErrorDetalle(''); setOperando(true);
     try {
       const updated = accion === 'despachar'
@@ -177,13 +181,14 @@ export function TransferenciasPage() {
       action={encargado && <button className="button button--primary" type="button" onClick={abrirNuevo}><Icon name="arrows" size={18}/> Nueva transferencia</button>}/>
     <SuccessNotice message={mensaje} onClose={() => setMensaje('')}/>
     <ErrorNotice message={errorOpciones} retry={() => setRevisionOpciones(v => v + 1)}/>
+    {cargandoOpciones && <LoadingIndicator inline label="Cargando sucursales y medicamentos…"/>}
     <section className="data-card">
       <div className="data-toolbar data-toolbar--wrap">
         <label className="data-field data-field--compact"><span>Estado</span><select value={filtroEstado} onChange={e => { setFiltroEstado(e.target.value); setDesde(0); }}>
           <option value="">Todos los estados</option>
           {ESTADOS_TRANSFERENCIA.map(t => <option key={t} value={t}>{ETIQUETAS_TRANSFERENCIA[t]}</option>)}
         </select></label>
-        {admin && <label className="data-field data-field--compact"><span>Sucursal participante</span><select value={filtroSucursal} onChange={e => { setFiltroSucursal(e.target.value); setDesde(0); }} disabled={Boolean(errorOpciones)}>
+        {admin && <label className="data-field data-field--compact"><span>Sucursal participante</span><select value={filtroSucursal} onChange={e => { setFiltroSucursal(e.target.value); setDesde(0); }} disabled={Boolean(errorOpciones) || cargandoOpciones}>
           <option value="">Todas las sucursales</option>
           {sucursales.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.codigo} · {s.nombre}</option>)}
         </select></label>}
@@ -205,10 +210,11 @@ export function TransferenciasPage() {
     {encargado && <div className="inline-tip"><Icon name="info" size={18}/><span>Solo puedes despachar desde tu farmacia y recibir en ella. Para transferir a una sucursal sin historial, ingresa su ID de catálogo; el backend valida que exista y esté activa.</span></div>}
     {panel === 'detalle' && <DetalleTransferencia detalle={detalle} cargando={cargandoDetalle} error={errorDetalle} operando={operando} usuario={usuario}
       onClose={() => { if (!operando) setPanel(null); }} onRetry={() => setRevisionDetalle(v => v + 1)} onAccion={cambiarEstado}/>}
-    {panel === 'nuevo' && encargado && <DataPanel title="Nueva transferencia" subtitle="Primero registra la solicitud. No habrá salida de inventario hasta que se confirme el despacho." onClose={() => { if (!operando) setPanel(null); }}>
+    {confirmationModal}
+    {panel === 'nuevo' && encargado && <DataPanel title="Nueva transferencia" subtitle="Primero registra la solicitud. No habrá salida de inventario hasta que se confirme el despacho." onClose={() => { if (!operando) setPanel(null); }} locked={operando}>
       <form className="data-form" onSubmit={registrar}>
         <div className="data-form-grid">
-          <label className="data-field"><span>Sucursal origen</span><input type="text" readOnly value={propias ? `${propias.nombre} (ID ${usuario.id_sucursal})` : `Mi sucursal · ID ${usuario.id_sucursal}`}/></label>
+          <ReadOnlyField label="Sucursal origen" value={propias ? `${propias.nombre} (ID ${usuario.id_sucursal})` : `Mi sucursal · ID ${usuario.id_sucursal}`}/>
           <label className="data-field"><span>ID sucursal destino *</span><input type="number" inputMode="numeric" min="1" max="9999999999" step="1" placeholder="Ej. 2" required value={form.id_sucursal_destino}
             onChange={e => setForm(f => ({ ...f, id_sucursal_destino: e.target.value }))}/></label>
         </div>
@@ -216,7 +222,7 @@ export function TransferenciasPage() {
         <div className="transfer-lines-heading"><h3>Medicamentos a transferir</h3><span>Máximo 50 renglones</span></div>
         <div className="transfer-lines">
           {form.detalles.map((linea, i) => <div className="transfer-line" key={linea.key}>
-            <label className="data-field"><span>Medicamento {i+1} *</span><select value={linea.id_medicamento} required disabled={Boolean(errorOpciones)} onChange={e => cambiarLinea(linea.key, 'id_medicamento', e.target.value)}>
+            <label className="data-field"><span>Medicamento {i+1} *</span><select value={linea.id_medicamento} required disabled={Boolean(errorOpciones) || cargandoOpciones} onChange={e => cambiarLinea(linea.key, 'id_medicamento', e.target.value)}>
               <option value="">Selecciona un medicamento</option>
               {medicamentosActivos.map(m => <option key={m.id_medicamento} value={m.id_medicamento}>{m.codigo} · {m.nombre}</option>)}
             </select></label>
@@ -228,7 +234,7 @@ export function TransferenciasPage() {
         <ErrorNotice message={errorForm}/>
         <div className="data-form-actions">
           <button type="button" className="button button--secondary" disabled={operando} onClick={() => setPanel(null)}>Cancelar</button>
-          <button type="submit" className="button button--primary" disabled={operando || Boolean(errorOpciones) || !medicamentosActivos.length}>{operando ? 'Registrando…' : 'Registrar transferencia'}</button>
+          <button type="submit" className="button button--primary" disabled={operando || cargandoOpciones || Boolean(errorOpciones) || !medicamentosActivos.length}>{operando ? 'Registrando…' : 'Registrar transferencia'}</button>
         </div>
       </form>
     </DataPanel>}

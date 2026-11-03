@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
-import { DataPanel, ErrorNotice, Field, PageHeading, Pager, StatusLabel, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, Field, PageHeading, Pager, StatusLabel, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
 import { listApi, PAGE_LIMIT, saveCatalogoApi } from '../services/catalogosApi.js';
@@ -42,7 +42,7 @@ export function MedicamentosPage() {
     <ErrorNotice message={error} retry={refrescar}/><div className="table-wrap"><table className="data-table"><thead><tr><th>Código</th><th>Medicamento</th><th>Presentación</th><th>Estado</th>{admin && <th>Acción</th>}</tr></thead><tbody>{!cargando && !error && filas.map(row => <tr key={row.id_medicamento}><td><span className="mono-tag">{row.codigo}</span></td><td><strong>{row.nombre}</strong></td><td>{row.presentacion}</td><td><StatusLabel active={row.activo === 'S'}/></td>{admin && <td><button type="button" className="table-action" onClick={() => editar(row)}>Editar</button></td>}</tr>)}</tbody></table></div>
     <TableState loading={cargando} error={error} length={filas.length}/>{!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}</section>
     {!admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>El catálogo está disponible para consulta. Solo el administrador central puede cambiarlo.</span></div>}
-    {panel !== null && admin && <DataPanel title={panel === 'nuevo' ? 'Nuevo medicamento' : 'Editar medicamento'} subtitle="Esta etapa no maneja lotes, caducidades ni precios comerciales." onClose={cerrar}><form onSubmit={guardar} className="data-form"><div className="data-form-grid">
+    {panel !== null && admin && <DataPanel title={panel === 'nuevo' ? 'Nuevo medicamento' : 'Editar medicamento'} subtitle="Esta etapa no maneja lotes, caducidades ni precios comerciales." onClose={cerrar} locked={guardando}><form onSubmit={guardar} className="data-form"><div className="data-form-grid">
       <Field label="Código *" name="codigo" maxLength={30} value={form.codigo} onChange={(k,v) => setForm(f => ({ ...f, [k]: v }))} required/>
       <Field label="Nombre *" name="nombre" maxLength={150} value={form.nombre} onChange={(k,v) => setForm(f => ({ ...f, [k]: v }))} required/>
       <Field label="Presentación *" name="presentacion" maxLength={100} value={form.presentacion} onChange={(k,v) => setForm(f => ({ ...f, [k]: v }))} required/>

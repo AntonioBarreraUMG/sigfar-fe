@@ -1,80 +1,74 @@
-# SIGFAR — Frontend React + Vite · Etapa 6: Auditoría centralizada
+# SIGFAR — Frontend React · Etapa 7 (ajustes de interfaz e integración)
 
-**Entrega acumulativa:** etapas 1–5 validadas por el estudiante + módulo final de consulta de auditoría. **No contiene modificaciones del backend ni de la base de datos.**
+Esta entrega es **acumulativa**: contiene las nueve áreas funcionales de la Etapa 6 más los ajustes de interfaz solicitados. No se modifican el backend **v1.4**, sus contratos HTTP, permisos ni las **15 tablas** de Oracle XE.
 
-## Requisitos y compatibilidad
+## Requisitos
 
-- Backend **SIGFAR v1.4**, Node.js + Express, en `http://127.0.0.1:3000`, conectado a Oracle XE (`XEPDB1`).
-- Frontend **React 19 / React Router 7 / Vite 7**. Node.js **20.19 o posterior**.
-- Vite mantiene el proxy local `/api` hacia el puerto 3000. No hay conexión directa de React con Oracle.
-- No se necesitan credenciales Oracle ni secretos del backend en el frontend.
-- Usa los tres endpoints de **solo lectura** del backend existente:
+- Node.js 20.19 o posterior.
+- Backend SIGFAR v1.4 ejecutándose en `http://127.0.0.1:3000` y conectado a Oracle XE, servicio `XEPDB1`.
+- Vite sirve el frontend en `http://127.0.0.1:5173` y redirige `/api` al backend. No añadas credenciales Oracle al frontend.
 
-| Operación | Endpoint (base `/api/v1`) | Permisos |
-|---|---|---|
-| Historial con filtros, paginado y total | `GET /auditoria/registros` | Solo administrador central |
-| Resumen por entidad y sucursal | `GET /auditoria/resumen` | Solo administrador central |
-| Detalle con valores anteriores/posteriores | `GET /auditoria/registros/:id` | Solo administrador central |
+## Actualización segura
 
-No se crean, actualizan ni eliminan registros de auditoría desde React. El backend sigue aplicando los controles de acceso. No se cambian las **15 tablas** de Oracle XE.
+1. Conserva la Etapa 6 que ya validaste y **descomprime este ZIP en otra carpeta**.
+2. No reemplaces el backend y conserva su archivo `.env`. No recrees el esquema ni repitas la carga de datos SQL.
+3. Abre dos terminales PowerShell:
 
-## Actualización segura en Windows / PowerShell
-
-1. Conserva una copia de la carpeta de la Etapa 5, que ya tienes funcionando.
-2. Descomprime esta Etapa 6 **en una carpeta diferente**.
-3. Conserva la instalación y el `.env` original del backend v1.4; no debes ejecutar los scripts SQL de creación ni los datos de prueba.
-4. Inicia el backend en una terminal:
+**Terminal del backend:**
 
 ```powershell
 cd C:\ruta\SIGFAR_Backend
 npm run dev
 ```
 
-5. En otra terminal, dentro de esta nueva carpeta del frontend, ejecuta:
+**Terminal del frontend actualizado:**
 
 ```powershell
+cd C:\ruta\SIGFAR_Frontend_Etapa7_UI
 npm install
-npm test
-npm run build
 npm run dev
 ```
 
-6. Visita `http://127.0.0.1:5173`, inicia sesión como **administrador central** y abre **Auditoría** en el menú lateral. El nombre de la ruta es `/auditoria`.
+4. Abre `http://127.0.0.1:5173`, inicia sesión normalmente y recorre los módulos disponibles según tu rol.
+5. Para generar una compilación de producción, cuando la necesites: `npm run build`.
 
-> Importante: no necesitas copiar archivos manualmente sobre la Etapa 5. Este ZIP incluye el frontend completo acumulativo. Si Vite utiliza otro puerto por configuración local, utiliza la URL que muestre la terminal.
+## Ajustes aplicados
 
-## Funciones agregadas
+### Indicadores de carga
 
-- Tabla de operaciones con fecha, sucursal, usuario, entidad, acción, registro afectado y enlace para ver el detalle.
-- Filtros combinables por sucursal, ID de usuario, entidad, acción, ID de registro afectado, fecha inicial y fecha final.
-- Historial ordenado por el backend (más reciente primero), con total real y paginación de 20 filas.
-- Resumen de operaciones por entidad y por sucursal, incluidas las operaciones globales sin sucursal.
-- Detalle de la operación, con datos anteriores y posteriores, como JSON formateado o texto histórico (si existen). Su presentación es **solo texto**, sin insertar HTML de la bitácora.
-- Manejo de respuestas vacías, interrupciones de conexión, errores HTTP y botones de reintento.
-- Ruta y menú exclusivos de `ADMIN_CENTRAL`; encargado y coordinador no acceden a la vista ni a sus endpoints.
+- El componente `LoadingIndicator` se utiliza mientras las tablas consultan datos, se recuperan detalles, se buscan catálogos y se actualizan resúmenes.
+- También se muestra al comprobar la sesión, el estado HTTP y durante la autenticación; se utiliza un indicador en la consulta previa de disponibilidad.
+- Los indicadores tienen `role="status"` y un texto que describe lo que se está consultando.
 
-**Limitaciones deliberadas:** no se incorporan exportación de PDF/Excel, edición de auditoría, eliminación de registros, reportes comerciales ni nuevos filtros del backend. Las opciones de filtrado respetan las admitidas por `construirFiltrosAuditoria()`.
+### Formularios y detalles en modales
 
-## Validación y evidencias
+- `DataPanel` dejó de ser una tarjeta dentro de la página: ahora utiliza `Modal` mediante un portal React, sin modificar los formularios ni los endpoints existentes.
+- Los formularios y detalles de **Sucursales, Medicamentos, Inventarios, Transferencias, Efectivo, Planillas, Activos, Solicitudes y Auditoría** se abren sobre la pantalla.
+- El modal bloquea el desplazamiento de fondo, traslada el foco al diálogo, conserva Tab dentro del mismo, admite Escape cuando no hay escritura en curso y devuelve el foco al control anterior al cerrar.
+- Los modales amplios desplazan su contenido verticalmente en pantallas pequeñas. No se crean nuevas rutas ni formularios.
 
-- `npm test`: tests de regresión de las etapas 1–5 + 26 tests nuevos de auditoría (132 pruebas en total).
-- `npm run build`: compilación de producción que **debes ejecutar localmente**.
-- `PRUEBAS_MANUALES.md`: casos para validar desde navegador contra tu Oracle XE.
-- `VALIDACION_LOCAL.md`: alcance exacto de las comprobaciones ejecutadas al preparar este ZIP.
+### Confirmación con modal
 
-Los tests usan respuestas HTTP simuladas y no escriben en Oracle. Las verificaciones en navegador y la compilación final quedan para tu equipo, donde ya funciona el backend.
+- Se sustituyeron todos los usos existentes de `window.confirm` en **Transferencias** y **Solicitudes/Entregas** por el diálogo `ConfirmDialog`.
+- La confirmación solo realiza la petición HTTP después de aceptar. La cancelación o Escape no ejecuta la acción.
+- En las confirmaciones de anulación se muestra un botón con estilo de advertencia.
 
-## Archivos nuevos o modificados
+### Campos de solo lectura
 
-- `src/pages/AuditoriaPage.jsx`: pantalla completa de auditoría.
-- `src/services/auditoriaApi.js`: cliente de los tres endpoints existentes.
-- `src/utils/auditoria.js`: validación de filtros, paginación y presentación segura de datos históricos.
-- `tests/auditoria.test.js`: 26 pruebas unitarias y de contrato HTTP nuevas.
-- `src/app/App.jsx`: activa el módulo de auditoría.
-- `src/components/Icon.jsx`, `src/styles/global.css`: icono de búsqueda y estilos.
-- `src/layouts/AppLayout.jsx`, `src/pages/HomePage.jsx`: actualización de la etapa y estado visual.
-- `package.json`: versión frontend `0.6.0`.
+- Se incorporó `ReadOnlyField` para los campos no editables, con fondo diferenciado, borde discontinuo, icono de candado y etiqueta «Solo lectura».
+- Los detalles históricos muestran una indicación equivalente y estilos consistentes.
+- La sucursal asignada al encargado se presenta como valor no editable, en lugar de aparentar ser un selector modificable.
+- En las correcciones de planilla se distingue el período no modificable del importe editable; en la edición de activos se distingue el código no modificable.
 
-## Siguiente etapa del plan
+## Alcance y límites
 
-**Pruebas integrales de navegador y despliegue en la nube.** Tras tu aprobación de esta pantalla, la fase siguiente comprobará los flujos entre los módulos, probará regresiones y preparará el despliegue con Oracle XE sin abrir públicamente el puerto de la base de datos.
+- **Sin nuevas pruebas funcionales:** se conservan los archivos de pruebas existentes en la entrega acumulativa, pero no se añadieron casos nuevos ni se realizó una batería funcional para esta modificación, según lo solicitado.
+- Se revisó **sintaxis** del código JS/JSX e importaciones relativas de forma estática. La compilación de Vite y la comprobación visual en tu equipo quedan para tu revisión habitual.
+- Esta entrega no implementa servicios de nube ni cambia la infraestructura de la API. El siguiente trabajo técnico será preparar y ejecutar el despliegue en la nube, según el enunciado universitario.
+
+## Componentes nuevos o cambiados
+
+- **Nuevos:** `src/components/Modal.jsx`, `ConfirmDialog.jsx`, `LoadingIndicator.jsx`.
+- **Modificados:** `DataUI.jsx`, `AdminUI.jsx`, `LoadingScreen.jsx`, pantallas de los nueve módulos, `LoginPage.jsx`, `HomePage.jsx` y `src/styles/global.css`.
+
+La aplicación sigue utilizando React + Vite, el backend Node.js + Express validado y Oracle XE, sin añadir módulos de negocio ni funciones ajenas al prototipo académico.

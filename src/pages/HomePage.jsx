@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { healthApi } from '../services/healthApi.js';
 import { modulosPorRol, nombreRol } from '../utils/access.js';
@@ -20,7 +21,7 @@ export function HomePage() {
   }, [api]);
 
   return <div className="page-stack">
-    <div className="welcome-strip"><span className="welcome-dot"/> ENTORNO DE DEMOSTRACIÓN · FRONTEND ETAPA 6</div>
+    <div className="welcome-strip"><span className="welcome-dot"/> ENTORNO DE DEMOSTRACIÓN · FRONTEND ACTUALIZADO</div>
     <section className="hero-panel">
       <div className="hero-copy">
         <div className="eyebrow eyebrow--light">PANEL DE INICIO</div>
@@ -33,7 +34,7 @@ export function HomePage() {
     <section className="metrics-row" aria-label="Estado actual del sistema">
       <div className="metric-card"><span className="metric-icon metric-icon--mint"><Icon name="check" size={21}/></span><div><strong>Sesión verificada</strong><small>Identidad confirmada por /auth/me</small></div></div>
       <div className="metric-card"><span className="metric-icon metric-icon--blue"><Icon name="grid" size={21}/></span><div><strong>{modulos.length} módulos accesibles</strong><small>Según permisos de tu usuario</small></div></div>
-      <div className="metric-card"><span className={`metric-icon ${estadoApi === 'disponible' ? 'metric-icon--mint' : 'metric-icon--amber'}`}><Icon name={estadoApi === 'disponible' ? 'activity' : 'alert'} size={21}/></span><div><strong>{estadoApi === 'disponible' ? 'API HTTP operativa' : estadoApi === 'consultando' ? 'Comprobando API…' : 'API sin respuesta'}</strong><small>Verificación mediante /api/v1/health</small></div></div>
+      <div className="metric-card"><span className={`metric-icon ${estadoApi === 'disponible' ? 'metric-icon--mint' : 'metric-icon--amber'}`}><Icon name={estadoApi === 'disponible' ? 'activity' : 'alert'} size={21}/></span><div><strong>{estadoApi === 'disponible' ? 'API HTTP operativa' : estadoApi === 'consultando' ? <LoadingIndicator inline label="Comprobando API…"/> : 'API sin respuesta'}</strong><small>Verificación mediante /api/v1/health</small></div></div>
     </section>
     <section className="modules-section" aria-labelledby="modules-heading">
       <div className="section-heading"><div><div className="eyebrow">ÁREAS DE TRABAJO</div><h2 id="modules-heading">Módulos disponibles para tu rol</h2><p>Las áreas funcionales de tu rol ya están integradas con el backend.</p></div><span className="section-count">{modulos.length} áreas</span></div>

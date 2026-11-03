@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
 import { createMovimientoApi, listApi, listMovimientosApi, listOpcionesApi, PAGE_LIMIT } from '../services/catalogosApi.js';
@@ -18,6 +19,7 @@ export function InventariosPage() {
   const [sucursales, setSucursales] = useState([]);
   const [medicamentos, setMedicamentos] = useState([]);
   const [errorOpciones, setErrorOpciones] = useState('');
+  const [cargandoOpciones, setCargandoOpciones] = useState(true);
   const [revisionOpciones, setRevisionOpciones] = useState(0);
   const [panel, setPanel] = useState(false);
   const [form, setForm] = useState({ id_sucursal: String(usuario.id_sucursal || ''), id_medicamento: '', tipo: 'INICIAL', cantidad: '1', motivo: '' });
@@ -27,14 +29,14 @@ export function InventariosPage() {
 
   useEffect(() => {
     const abort = new AbortController();
-    setErrorOpciones('');
+    setErrorOpciones(''); setCargandoOpciones(true);
     Promise.all([
       listOpcionesApi(api, 'sucursales', { signal: abort.signal }),
       listOpcionesApi(api, 'medicamentos', { signal: abort.signal })
     ]).then(([suc, med]) => {
-      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); }
+      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); setCargandoOpciones(false); }
     }).catch(err => {
-      if (!abort.signal.aborted) setErrorOpciones(err.message || 'No se pudieron consultar los catálogos.');
+      if (!abort.signal.aborted) { setErrorOpciones(err.message || 'No se pudieron consultar los catálogos.'); setCargandoOpciones(false); }
     });
     return () => abort.abort();
   }, [api, revisionOpciones]);
@@ -73,15 +75,16 @@ export function InventariosPage() {
     <PageHeading eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" description="Existencias y reservas reales por sucursal. Los registros se consultan en Oracle a través del backend." action={encargado && <button className="button button--primary" type="button" onClick={abrirForm}><Icon name="boxes" size={17}/> Registrar movimiento</button>}/>
     <SuccessNotice message={mensaje} onClose={() => setMensaje('')}/>
     <ErrorNotice message={errorOpciones} retry={() => setRevisionOpciones(v => v + 1)}/>
+    {cargandoOpciones && <LoadingIndicator inline label="Cargando sucursales y medicamentos…"/>}
     <section className="data-card">
       <div className="data-tabbar" role="tablist" aria-label="Vistas de inventario"><button type="button" role="tab" aria-selected={vista === 'existencias'} className={vista === 'existencias' ? 'data-tab data-tab--selected' : 'data-tab'} onClick={() => cambiarVista('existencias')}>Existencias</button>{verMovimientos && <button type="button" role="tab" aria-selected={vista === 'movimientos'} className={vista === 'movimientos' ? 'data-tab data-tab--selected' : 'data-tab'} onClick={() => cambiarVista('movimientos')}>Historial de movimientos</button>}</div>
       <div className="data-toolbar data-toolbar--wrap">
-        <label className="data-field data-field--compact"><span>Sucursal</span><select value={filtroSucursal} disabled={encargado || Boolean(errorOpciones)} onChange={e => { setFiltroSucursal(e.target.value); setDesde(0); }}>
-          {!encargado && <option value="">Todas las sucursales</option>}
+        {encargado ? <ReadOnlyField label="Sucursal" compact value={farmaciaPropia?.nombre || `Sucursal ID ${usuario.id_sucursal}`}/> :
+        <label className="data-field data-field--compact"><span>Sucursal</span><select value={filtroSucursal} disabled={Boolean(errorOpciones) || cargandoOpciones} onChange={e => { setFiltroSucursal(e.target.value); setDesde(0); }}>
+          <option value="">Todas las sucursales</option>
           {sucursalesParaElegir.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre}</option>)}
-          {encargado && !farmaciaPropia && <option value={usuario.id_sucursal}>Mi sucursal (ID {usuario.id_sucursal})</option>}
-        </select></label>
-        <label className="data-field data-field--compact"><span>Medicamento</span><select value={filtroMedicamento} disabled={Boolean(errorOpciones)} onChange={e => { setFiltroMedicamento(e.target.value); setDesde(0); }}><option value="">Todos los medicamentos</option>{medicamentos.map(m => <option value={m.id_medicamento} key={m.id_medicamento}>{m.codigo} · {m.nombre}</option>)}</select></label>
+        </select></label>}
+        <label className="data-field data-field--compact"><span>Medicamento</span><select value={filtroMedicamento} disabled={Boolean(errorOpciones) || cargandoOpciones} onChange={e => { setFiltroMedicamento(e.target.value); setDesde(0); }}><option value="">Todos los medicamentos</option>{medicamentos.map(m => <option value={m.id_medicamento} key={m.id_medicamento}>{m.codigo} · {m.nombre}</option>)}</select></label>
         <button type="button" className="button button--secondary" disabled={cargando} onClick={refrescar}><Icon name="refresh" size={16}/> Actualizar</button>
       </div>
       <ErrorNotice message={error} retry={refrescar}/>
@@ -93,9 +96,9 @@ export function InventariosPage() {
       {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}
     </section>
     {!encargado && <div className="inline-tip"><Icon name="lock" size={18}/><span>Tu rol permite consultar existencias{verMovimientos ? ' e historial' : ''}. Solo los encargados pueden registrar inventario inicial o ajustes en su propia sucursal.</span></div>}
-    {panel && encargado && <DataPanel title="Registrar movimiento" subtitle="Los movimientos iniciales crean una nueva fila; los ajustes requieren inventario ya registrado." onClose={() => { if (!guardando) setPanel(false); }}><form className="data-form" onSubmit={registrar}><div className="data-form-grid">
-      <label className="data-field"><span>Sucursal</span><select value={form.id_sucursal} disabled><option value={usuario.id_sucursal}>{farmaciaPropia?.nombre || `Sucursal ${usuario.id_sucursal}`}</option></select></label>
-      <label className="data-field"><span>Medicamento *</span><select value={form.id_medicamento} onChange={e => setForm(f => ({ ...f, id_medicamento: e.target.value }))} required disabled={!medicamentos.length || Boolean(errorOpciones)}><option value="">Selecciona un medicamento</option>{medicamentos.filter(m => m.activo === 'S').map(m => <option key={m.id_medicamento} value={m.id_medicamento}>{m.codigo} · {m.nombre}</option>)}</select></label>
+    {panel && encargado && <DataPanel title="Registrar movimiento" subtitle="Los movimientos iniciales crean una nueva fila; los ajustes requieren inventario ya registrado." onClose={() => { if (!guardando) setPanel(false); }} locked={guardando}><form className="data-form" onSubmit={registrar}><div className="data-form-grid">
+      <ReadOnlyField label="Sucursal" value={farmaciaPropia?.nombre || `Sucursal ${usuario.id_sucursal}`}/>
+      <label className="data-field"><span>Medicamento *</span><select value={form.id_medicamento} onChange={e => setForm(f => ({ ...f, id_medicamento: e.target.value }))} required disabled={!medicamentos.length || Boolean(errorOpciones) || cargandoOpciones}><option value="">Selecciona un medicamento</option>{medicamentos.filter(m => m.activo === 'S').map(m => <option key={m.id_medicamento} value={m.id_medicamento}>{m.codigo} · {m.nombre}</option>)}</select></label>
       <label className="data-field"><span>Tipo *</span><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value, motivo: e.target.value === 'INICIAL' ? '' : f.motivo }))}>{TIPOS_MOVIMIENTO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <label className="data-field"><span>Cantidad de unidades *</span><input type="number" min="1" step="1" max="9999999999" value={form.cantidad} onChange={e => setForm(f => ({ ...f, cantidad: e.target.value }))} required/></label>
       <label className="data-field data-field--wide"><span>Motivo {form.tipo === 'INICIAL' ? '(opcional)' : '*'}</span><textarea rows={3} maxLength={250} value={form.motivo} onChange={e => setForm(f => ({ ...f, motivo: e.target.value }))} placeholder={form.tipo === 'INICIAL' ? 'Inventario de apertura' : 'Describe el motivo del ajuste'} required={form.tipo !== 'INICIAL'}/></label>

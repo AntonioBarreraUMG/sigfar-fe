@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { ConfirmacionEscritura, ResumenAdmin, SucursalFiltro, useResumenAdmin, useSucursalesAdmin } from '../components/AdminUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -68,10 +68,11 @@ export function PlanillasPage() {
     </table></div><TableState loading={cargando} error={error} length={filas.length} emptyMessage="No hay gastos de planilla para este período."/>
     {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}</section>
     {admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>El administrador puede consultar los gastos consolidados de toda la empresa; solamente los encargados registran o corrigen montos de su sucursal.</span></div>}
-    {panel !== null && !admin && <DataPanel title={panel === 'nuevo' ? 'Registrar gasto de planilla' : `Corregir planilla #${panel.id}`} subtitle={panel === 'nuevo' ? 'Se permite un registro por período y sucursal.' : `Período ${panel.periodo}. Solo puede modificarse el monto registrado.`} onClose={()=>!guardando && setPanel(null)}>
+    {panel !== null && !admin && <DataPanel title={panel === 'nuevo' ? 'Registrar gasto de planilla' : `Corregir planilla #${panel.id}`} subtitle={panel === 'nuevo' ? 'Se permite un registro por período y sucursal.' : `Período ${panel.periodo}. Solo puede modificarse el monto registrado.`} onClose={()=>!guardando && setPanel(null)} locked={guardando}>
       <form className="data-form" onSubmit={guardar}><div className="data-form-grid">
-        {panel === 'nuevo' && <><label className="data-field"><span>Sucursal</span><input readOnly value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/></label>
+        {panel === 'nuevo' && <><ReadOnlyField label="Sucursal" value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/>
         <label className="data-field"><span>Período *</span><input type="month" required value={form.periodo} onChange={e=>setForm(f=>({...f,periodo:e.target.value}))}/></label></>}
+        {panel !== 'nuevo' && <><ReadOnlyField label="Sucursal" value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/><ReadOnlyField label="Período" value={panel.periodo}/></>}
         <label className="data-field"><span>Monto de planilla (GTQ) *</span><input required inputMode="decimal" type="text" placeholder="1250.00" value={form.monto_total} onChange={e=>setForm(f=>({...f,monto_total:e.target.value}))}/></label>
       </div><ConfirmacionEscritura mensaje={panel === 'nuevo' ? 'El gasto quedará registrado para la sucursal y el período indicados.' : 'La corrección registrará los valores anteriores y nuevos en auditoría.'}/><ErrorNotice message={errorForm}/><div className="data-form-actions"><button type="button" className="button button--secondary" disabled={guardando} onClick={()=>setPanel(null)}>Cancelar</button><button type="submit" className="button button--primary" disabled={guardando}>{guardando ? 'Guardando…' : panel === 'nuevo' ? 'Registrar planilla' : 'Guardar corrección'}</button></div></form>
     </DataPanel>}

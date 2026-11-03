@@ -63,3 +63,40 @@
 .audit-loading{font-size:12px;color:#718a87}.audit-snapshots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:21px 0}.audit-snapshots section{min-width:0}.audit-snapshots h3{font-size:13px;color:#315e59;margin:0 0 10px}.audit-snapshot{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:400px;overflow:auto;margin:0;padding:17px;font-size:11px;line-height:1.65;color:#275054;background:#f7faf8;border:1px solid #e0ebe5;border-radius:10px;font-family:ui-monospace,Consolas,monospace}.admin-detail-list dd small{display:block;color:#74918d;font-weight:500;margin-top:6px}
 @media(max-width:1000px){.audit-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.audit-filter-grid,.audit-snapshots,.audit-breakdowns{grid-template-columns:1fr}.audit-filters{padding:18px 15px}.audit-filter-actions{flex-wrap:wrap}.audit-filter-actions button{flex:1}.audit-history-heading{padding:16px;align-items:flex-start;flex-direction:column}.audit-total{margin:0 15px 15px}.audit-breakdowns{padding:0 15px}}
+
+/* Etapa 7 · Sistema de modales, carga y presentación de solo lectura */
+.sigfar-modal-backdrop{position:fixed;inset:0;z-index:2100;background:rgba(14,37,40,.62);display:flex;align-items:center;justify-content:center;padding:clamp(12px,3vw,36px);overscroll-behavior:contain;animation:sigfar-fade-in .16s ease-out}
+.sigfar-modal-backdrop--confirmation{z-index:2300;background:rgba(9,29,30,.72)}
+.sigfar-modal{display:flex;flex-direction:column;min-width:0;width:min(900px,100%);max-height:min(90dvh,920px);background:white;box-shadow:0 25px 100px rgba(5,33,35,.3);border:1px solid #dce7e2;border-radius:17px;outline:0;animation:sigfar-modal-in .19s ease-out;overflow:hidden}
+.sigfar-modal--confirmation{width:min(480px,100%)}
+.sigfar-modal-header{padding:22px 27px 19px;display:flex;align-items:start;justify-content:space-between;gap:15px;border-bottom:1px solid #e7efeb;flex:none}
+.sigfar-modal-header h2{margin:0 0 5px;font-size:22px;color:#1b434a;line-height:1.3}.sigfar-modal-header p{font-size:12px;line-height:1.6;color:#748b88;margin:0}
+.sigfar-modal-header .icon-button{flex:none}
+.sigfar-modal-body{padding:24px 27px 27px;overflow:auto;overscroll-behavior:contain;min-height:0;flex:1}
+.sigfar-modal-body .data-form-actions{position:sticky;bottom:-27px;background:#fff;padding-bottom:6px;z-index:1}
+.sigfar-modal .data-message{margin-bottom:14px}
+.sigfar-confirm-message{display:flex;gap:13px;background:#f5f9f7;padding:17px;border-radius:12px;border:1px solid #e4eeea;color:#3d5d58;font-size:14px;line-height:1.65}
+.sigfar-confirm-message svg{flex:none;color:#3f816c;margin-top:2px}.sigfar-confirm-message p{margin:0}
+.sigfar-button-danger{background:#a93f36;border:1px solid #a93f36;color:white}.sigfar-button-danger:hover{background:#8d3029}
+.sigfar-loading{display:flex;justify-content:center;align-items:center;gap:12px;padding:27px 16px;color:#466f67;font-size:12px;font-weight:700}
+.sigfar-loading--inline{display:inline-flex;justify-content:flex-start;padding:8px 4px;font-size:11px}
+.sigfar-spinner{width:22px;height:22px;border:3px solid #d7ebe2;border-top-color:#17775e;border-radius:50%;flex:none;animation:sigfar-spin .76s linear infinite}
+.sigfar-loading--inline .sigfar-spinner{width:17px;height:17px;border-width:2px}
+.sigfar-readonly-field{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sigfar-readonly-field--compact{width:min(100%,280px)}
+.sigfar-readonly-label{font-size:11px;font-weight:750;color:#66847e}
+.sigfar-readonly-value{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#f1f5f4;border:1px dashed #b8ccc5;border-radius:9px;min-height:44px;padding:10px 12px;color:#2b5350;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+.sigfar-readonly-value>span:first-child{flex:1;min-width:60px}
+.sigfar-readonly-mark{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;color:#657c78;font-weight:700;background:#e1ece8;border-radius:20px;font-size:10px;padding:4px 7px}
+.sigfar-readonly-notice{display:flex;align-items:center;gap:10px;color:#52746c;font-weight:650;background:#eff7f3;border:1px solid #d8e9e0;border-radius:10px;padding:11px 13px;margin-bottom:18px;font-size:12px;line-height:1.5}
+/* Los registros de detalle también se identifican visualmente como no editables. */
+.sigfar-modal .admin-detail-list>div,.sigfar-modal .transfer-detail-cell{background:#f3f7f5;border-style:dashed;border-color:#ccdcd5}
+.sigfar-modal .admin-detail-list dt,.sigfar-modal .transfer-detail-cell>span{font-weight:750;color:#52776d}
+.sigfar-modal .audit-snapshot{background:#f5f8f7}
+.sigfar-modal input[readonly],.sigfar-modal textarea[readonly],.sigfar-modal select:disabled{background:#f1f5f4;border:1px dashed #b8ccc5;color:#345b52;cursor:default;opacity:1}
+.sigfar-modal input[readonly]:focus{box-shadow:none}
+@keyframes sigfar-spin{to{transform:rotate(360deg)}}
+@keyframes sigfar-modal-in{from{opacity:.75;transform:translateY(10px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes sigfar-fade-in{from{opacity:0}to{opacity:1}}
+@media(max-width:600px){.sigfar-modal-backdrop{align-items:flex-end;padding:0}.sigfar-modal{width:100%;max-height:95dvh;border-radius:18px 18px 0 0}.sigfar-modal-header{padding:18px 19px}.sigfar-modal-header h2{font-size:19px}.sigfar-modal-body{padding:19px 17px 23px}.sigfar-readonly-mark{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.sigfar-modal-backdrop,.sigfar-modal,.sigfar-spinner{animation:none}}

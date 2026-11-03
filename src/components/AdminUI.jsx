@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { DataPanel, ErrorNotice } from './DataUI.jsx';
+import { DataPanel, ErrorNotice, ReadOnlyField } from './DataUI.jsx';
+import { LoadingIndicator } from './LoadingIndicator.jsx';
 import { Icon } from './Icon.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { listOpcionesApi } from '../services/catalogosApi.js';
@@ -11,29 +12,29 @@ export function useSucursalesAdmin() {
   const { api, usuario } = useAuth();
   const [sucursales, setSucursales] = useState([]);
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(true);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    setError('');
+    setError(''); setCargando(true);
     listOpcionesApi(api, 'sucursales', { signal: controller.signal }).then(rows => {
-      if (!controller.signal.aborted) setSucursales(rows);
+      if (!controller.signal.aborted) { setSucursales(rows); setCargando(false); }
     }).catch(e => {
-      if (!controller.signal.aborted) setError(e.message || 'No fue posible cargar las sucursales.');
+      if (!controller.signal.aborted) { setError(e.message || 'No fue posible cargar las sucursales.'); setCargando(false); }
     });
     return () => controller.abort();
   }, [api, revision]);
   const admin = usuario.rol === ROLES.ADMIN;
-  return { sucursales, admin, error, reintentar: () => setRevision(v => v+1),
+  return { sucursales, admin, cargando, error, reintentar: () => setRevision(v => v+1),
     propia: sucursales.find(s => Number(s.id_sucursal) === Number(usuario.id_sucursal)) };
 }
 
 export function SucursalFiltro({ admin, sucursales, propia, valor, onChange, idPropia, disabled = false }) {
-  return <label className="data-field data-field--compact"><span>Sucursal</span>
-    {admin ? <select value={valor} onChange={e => onChange(e.target.value)} disabled={disabled}>
-      <option value="">Todas las sucursales</option>
-      {sucursales.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre} (ID {s.id_sucursal})</option>)}
-    </select> : <input value={propia?.nombre || `Sucursal ID ${idPropia ?? '—'}`} readOnly aria-label="Sucursal asignada"/>}
-  </label>;
+  if (!admin) return <ReadOnlyField compact label="Sucursal" value={propia?.nombre || `Sucursal ID ${idPropia ?? '—'}`}/>;
+  return <label className="data-field data-field--compact"><span>Sucursal</span><select value={valor} onChange={e => onChange(e.target.value)} disabled={disabled}>
+    <option value="">Todas las sucursales</option>
+    {sucursales.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre} (ID {s.id_sucursal})</option>)}
+  </select></label>;
 }
 
 export function AdminKpis({ datos, valores }) {
@@ -65,10 +66,10 @@ export function useResumenAdmin(api, modulo, filtros, revision = 0) {
 export function ResumenAdmin({ titulo, cargando, error, datos, valores, subtitulo }) {
   return <section className="data-card admin-summary" aria-label={titulo}>
     <div className="admin-summary-title"><div><h2>{titulo}</h2>{subtitulo && <p>{subtitulo}</p>}</div>
-      {cargando && <span className="admin-loading">Actualizando…</span>}
+      {cargando && <LoadingIndicator inline label="Actualizando resumen…"/>}
     </div>
     <ErrorNotice message={error}/>
-    <AdminKpis datos={datos?.totales ?? null} valores={valores}/>
+    {!cargando && <AdminKpis datos={datos?.totales ?? null} valores={valores}/>}
     {datos?.por_sucursal?.length > 0 && <details className="admin-summary-breakdown"><summary>Ver desglose por sucursal</summary>
       <div className="table-wrap"><table className="data-table"><thead><tr><th>Sucursal</th>{valores.map(v => <th key={v.key} className="number-cell">{v.label}</th>)}</tr></thead>
       <tbody>{datos.por_sucursal.map(row => <tr key={row.id_sucursal}><td>{row.sucursal}</td>{valores.map(v => <td key={v.key} className="number-cell">{v.moneda === false ? Number(row[v.key]||0).toLocaleString('es-GT') : monedaGTQ(row[v.key])}</td>)}</tr>)}</tbody></table></div>

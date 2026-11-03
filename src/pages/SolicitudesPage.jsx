@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
 import { listOpcionesApi, PAGE_LIMIT } from '../services/catalogosApi.js';
@@ -10,6 +11,7 @@ import {
   entregarSolicitudApi, cancelarSolicitudApi
 } from '../services/solicitudesApi.js';
 import { ROLES } from '../utils/access.js';
+import { useConfirmation } from '../components/ConfirmDialog.jsx';
 import { fechaLocal } from '../utils/catalogos.js';
 import {
   ESTADOS_SOLICITUD, ETIQUETAS_SOLICITUD, accionSolicitud,
@@ -76,10 +78,11 @@ function DetalleSolicitud({ detalle, cargando, error, onReintentar, usuario, opc
   const puedeElegir = acciones.includes('confirmar');
   return <DataPanel title={detalle ? `Solicitud #${detalle.id_solicitud}` : 'Detalle de solicitud'}
     subtitle="Las reservas se efectúan al confirmar; las existencias disminuyen únicamente al despachar."
-    onClose={() => { if (!operando) onCerrar(); }}>
+    onClose={() => { if (!operando) onCerrar(); }} locked={operando}>
     <ErrorNotice message={error} retry={onReintentar}/>
-    {cargando && <div className="data-placeholder" role="status">Consultando detalle de solicitud…</div>}
+    {cargando && <LoadingIndicator label="Consultando detalle de solicitud…"/>}
     {!cargando && detalle && <>
+      <div className="sigfar-readonly-notice"><Icon name="lock" size={16}/><span>Los datos registrados de la solicitud son de solo lectura. La asignación y las acciones se realizan únicamente con los controles autorizados.</span></div>
       <div className="transfer-detail-grid">
         <div className="transfer-detail-cell"><span>Estado</span><EtiquetaEstado estado={detalle.estado}/></div>
         <div className="transfer-detail-cell"><span>Cliente</span><strong>{detalle.cliente_nombre}</strong><small>{detalle.cliente_telefono}</small></div>
@@ -100,7 +103,7 @@ function DetalleSolicitud({ detalle, cargando, error, onReintentar, usuario, opc
       </tbody></table></div>
       {puedeVerOpciones(usuario) && detalle.estado === 'PENDIENTE' && <section className="solicitud-opciones" aria-label="Opciones para atender la solicitud">
         <div className="transfer-lines-heading"><h3>Farmacias elegibles</h3><span>Se verifica la disponibilidad al confirmar</span></div>
-        {cargandoOpciones && <div role="status" className="data-placeholder">Consultando existencias por municipio…</div>}
+        {cargandoOpciones && <LoadingIndicator label="Consultando existencias por municipio…"/>}
         <ErrorNotice message={errorOpciones} retry={onReintentar}/>
         {!cargandoOpciones && !errorOpciones && <TablaOpciones opciones={opciones} seleccion={confirmacion.id_sucursal} onSeleccion={puedeElegir ? value => setConfirmacion(c => ({ ...c, id_sucursal: value })) : null} disponible={!operando}/>}
         {puedeElegir && !cargandoOpciones && !errorOpciones && Boolean(opciones?.length) && <label className="data-field solicitud-pago"><span>Forma de pago informada al cliente</span><select disabled={operando} value={confirmacion.forma_pago} onChange={e => setConfirmacion(c => ({ ...c, forma_pago: e.target.value }))}><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option></select></label>}
@@ -118,6 +121,7 @@ function DetalleSolicitud({ detalle, cargando, error, onReintentar, usuario, opc
 }
 
 export function SolicitudesPage() {
+  const { requestConfirmation, confirmationModal } = useConfirmation();
   const { api, usuario } = useAuth();
   const coordinador = puedeCrearSolicitud(usuario);
   const consultarOpciones = puedeVerOpciones(usuario);
@@ -128,6 +132,7 @@ export function SolicitudesPage() {
   const [sucursales, setSucursales] = useState([]);
   const [medicamentos, setMedicamentos] = useState([]);
   const [errorCatalogos, setErrorCatalogos] = useState('');
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
   const [revisionCatalogos, setRevisionCatalogos] = useState(0);
   const [panel, setPanel] = useState(null);
   const [idSeleccionado, setIdSeleccionado] = useState(null);
@@ -148,15 +153,15 @@ export function SolicitudesPage() {
   const siguienteLinea = useRef(2);
 
   useEffect(() => {
-    if (encargado) return undefined;
+    if (encargado) { setCargandoCatalogos(false); return undefined; }
     const abort = new AbortController();
-    setErrorCatalogos('');
+    setErrorCatalogos(''); setCargandoCatalogos(true);
     Promise.all([
       listOpcionesApi(api, 'sucursales', { signal: abort.signal }),
       ...(coordinador ? [listOpcionesApi(api, 'medicamentos', { signal: abort.signal })] : [])
     ]).then(([suc, med]) => {
-      if (!abort.signal.aborted) { setSucursales(suc); if (med) setMedicamentos(med); }
-    }).catch(e => { if (!abort.signal.aborted) setErrorCatalogos(e.message || 'No se pudieron cargar los catálogos.'); });
+      if (!abort.signal.aborted) { setSucursales(suc); if (med) setMedicamentos(med); setCargandoCatalogos(false); }
+    }).catch(e => { if (!abort.signal.aborted) { setErrorCatalogos(e.message || 'No se pudieron cargar los catálogos.'); setCargandoCatalogos(false); } });
     return () => abort.abort();
   }, [api, coordinador, encargado, revisionCatalogos]);
 
@@ -243,8 +248,8 @@ export function SolicitudesPage() {
     try {
       if (accion === 'confirmar') {
         confirmar = confirmacionPayload(confirmacion, opcionesDetalle, usuario, detalle);
-        if (!window.confirm('¿Confirmas la farmacia y la forma de pago seleccionadas? El inventario se reservará.')) return;
-      } else if (!window.confirm(MENSAJES_ACCION[accion])) return;
+        if (!await requestConfirmation({ title: 'Confirmar solicitud y reservas', message: '¿Confirmas la farmacia y la forma de pago seleccionadas? El inventario se reservará.', confirmText: 'Confirmar y reservar' })) return;
+      } else if (!await requestConfirmation({ title: accion === 'cancelar' ? 'Cancelar solicitud' : accion === 'despachar' ? 'Confirmar despacho' : 'Registrar entrega', message: MENSAJES_ACCION[accion], confirmText: accion === 'cancelar' ? 'Cancelar solicitud' : accion === 'despachar' ? 'Despachar' : 'Registrar entrega', danger: accion === 'cancelar' })) return;
     } catch (e) { setErrorDetalle(e.message || 'Selección inválida.'); return; }
     setOperando(true); setErrorDetalle('');
     try {
@@ -267,7 +272,10 @@ export function SolicitudesPage() {
   return <div className="page-stack">
     <PageHeading eyebrow="COORDINACIÓN DE MEDICAMENTOS" title="Solicitudes y entregas" description="Consulta de disponibilidad por municipio, reservas, despacho y seguimiento hasta la entrega al cliente." action={coordinador && <button className="button button--primary" type="button" onClick={abrirNuevo}><Icon name="truck" size={18}/> Nueva solicitud</button>}/>
     <SuccessNotice message={mensaje} onClose={() => setMensaje('')}/>
-    {!encargado && <ErrorNotice message={errorCatalogos} retry={() => setRevisionCatalogos(v => v + 1)}/>}
+    {!encargado && <>
+      <ErrorNotice message={errorCatalogos} retry={() => setRevisionCatalogos(v => v + 1)}/>
+      {cargandoCatalogos && <LoadingIndicator inline label="Cargando catálogos…"/>}
+    </>}
     <section className="data-card"><div className="data-toolbar data-toolbar--wrap">
       <label className="data-field data-field--compact"><span>Estado</span><select value={estado} onChange={e => { setEstado(e.target.value); setDesde(0); }}><option value="">Todos</option>{ESTADOS_SOLICITUD.map(e => <option key={e} value={e}>{ETIQUETAS_SOLICITUD[e]}</option>)}</select></label>
       {!encargado && <label className="data-field data-field--compact"><span>Farmacia asignada</span><select value={filtroSucursal} onChange={e => { setFiltroSucursal(e.target.value); setDesde(0); }}><option value="">Todas (incluidas pendientes)</option>{sucursales.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre} · ID {s.id_sucursal}</option>)}</select></label>}
@@ -291,7 +299,8 @@ export function SolicitudesPage() {
     {encargado && <div className="inline-tip"><Icon name="lock" size={18}/><span>Solo puedes consultar las solicitudes asignadas a tu sucursal. Puedes despacharlas y registrar su entrega cuando corresponda.</span></div>}
     {usuario.rol === ROLES.ADMIN && <div className="inline-tip"><Icon name="info" size={18}/><span>El administrador consulta todas las solicitudes, pero no puede confirmarlas, despacharlas ni entregarlas.</span></div>}
     {panel === 'detalle' && <DetalleSolicitud detalle={detalle} cargando={cargandoDetalle} error={errorDetalle} onReintentar={() => setRevisionDetalle(v => v + 1)} usuario={usuario} opciones={opcionesDetalle} cargandoOpciones={cargandoOpciones} errorOpciones={errorOpciones} confirmacion={confirmacion} setConfirmacion={setConfirmacion} operando={operando} onAccion={realizarAccion} onCerrar={() => { if (!operando) setPanel(null); }}/>} 
-    {panel === 'nuevo' && coordinador && <DataPanel title="Registrar solicitud" subtitle="Se creará una solicitud pendiente. Solo al confirmarla se reservará inventario." onClose={() => { if (!operando && !cargandoPrevias) setPanel(null); }}>
+    {confirmationModal}
+    {panel === 'nuevo' && coordinador && <DataPanel title="Registrar solicitud" subtitle="Se creará una solicitud pendiente. Solo al confirmarla se reservará inventario." onClose={() => { if (!operando && !cargandoPrevias) setPanel(null); }} locked={operando || cargandoPrevias}>
       <form className="data-form" onSubmit={registrar}><div className="data-form-grid">
         <label className="data-field"><span>Nombre del cliente *</span><input required maxLength={120} disabled={operando || cargandoPrevias} value={form.cliente_nombre} onChange={e => cambiarForm('cliente_nombre',e.target.value)}/></label>
         <label className="data-field"><span>Teléfono *</span><input required maxLength={20} disabled={operando || cargandoPrevias} value={form.cliente_telefono} onChange={e => cambiarForm('cliente_telefono',e.target.value)}/></label>
@@ -300,10 +309,11 @@ export function SolicitudesPage() {
         <label className="data-field data-field--wide"><span>Dirección de entrega *</span><textarea required maxLength={250} disabled={operando || cargandoPrevias} rows={2} value={form.direccion_entrega} onChange={e => cambiarForm('direccion_entrega',e.target.value)}/></label>
       </div>
       <Renglones detalles={form.detalles} setDetalles={cambiarDetalles} medicamentos={medicamentos} disabled={operando || cargandoPrevias} nuevaClave={() => siguienteLinea.current++}/>
-      <div className="solicitud-consulta"><button type="button" className="button button--secondary" disabled={operando || cargandoPrevias || Boolean(errorCatalogos) || !medicamentos.length} onClick={previsualizar}><Icon name="eye" size={17}/>{cargandoPrevias ? 'Consultando…' : 'Consultar disponibilidad'}</button><span>Esta consulta no reserva medicamentos ni crea una solicitud.</span></div>
+      <div className="solicitud-consulta"><button type="button" className="button button--secondary" disabled={operando || cargandoPrevias || Boolean(errorCatalogos) || cargandoCatalogos || !medicamentos.length} onClick={previsualizar}><Icon name="eye" size={17}/>{cargandoPrevias ? 'Consultando…' : 'Consultar disponibilidad'}</button><span>Esta consulta no reserva medicamentos ni crea una solicitud.</span></div>
+      {cargandoPrevias && <LoadingIndicator inline label="Comprobando disponibilidad…"/>}
       {opcionesPrevias && <section aria-label="Resultado de disponibilidad"><div className="transfer-lines-heading"><h3>Farmacias elegibles actualmente</h3><span>{opcionesPrevias.length} resultado(s)</span></div><TablaOpciones opciones={opcionesPrevias}/></section>}
       <ErrorNotice message={errorForm}/>
-      <div className="data-form-actions"><button type="button" className="button button--secondary" disabled={operando || cargandoPrevias} onClick={() => setPanel(null)}>Cancelar</button><button type="submit" className="button button--primary" disabled={operando || cargandoPrevias || Boolean(errorCatalogos) || !medicamentos.length}>{operando ? 'Registrando…' : 'Registrar solicitud pendiente'}</button></div>
+      <div className="data-form-actions"><button type="button" className="button button--secondary" disabled={operando || cargandoPrevias} onClick={() => setPanel(null)}>Cancelar</button><button type="submit" className="button button--primary" disabled={operando || cargandoPrevias || Boolean(errorCatalogos) || cargandoCatalogos || !medicamentos.length}>{operando ? 'Registrando…' : 'Registrar solicitud pendiente'}</button></div>
     </form></DataPanel>}
   </div>;
 }

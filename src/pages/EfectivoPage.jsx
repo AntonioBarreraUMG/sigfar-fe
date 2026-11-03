@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { ConfirmacionEscritura, ResumenAdmin, SucursalFiltro, useResumenAdmin, useSucursalesAdmin } from '../components/AdminUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -76,13 +76,13 @@ export function EfectivoPage() {
       {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}
     </section>
     {admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>La cuenta del administrador central puede consultar y auditar el flujo de efectivo, pero no registrar movimientos.</span></div>}
-    {seleccionado && <DataPanel title={`Movimiento de efectivo #${seleccionado.id_movimiento_efectivo}`} subtitle="Registro histórico de solo lectura." onClose={()=>setSeleccionado(null)}>
+    {seleccionado && <DataPanel title={`Movimiento de efectivo #${seleccionado.id_movimiento_efectivo}`} subtitle="Registro histórico de solo lectura." onClose={()=>setSeleccionado(null)} readOnly>
       <dl className="admin-detail-list"><div><dt>Sucursal</dt><dd>{seleccionado.sucursal || seleccionado.id_sucursal}</dd></div><div><dt>Tipo</dt><dd>{seleccionado.tipo}</dd></div><div><dt>Concepto</dt><dd>{seleccionado.concepto}</dd></div><div><dt>Monto</dt><dd>{monedaGTQ(seleccionado.monto)}</dd></div><div><dt>Fecha</dt><dd>{fechaLocal(seleccionado.fecha_movimiento)}</dd></div><div><dt>Usuario (ID)</dt><dd>{seleccionado.id_usuario}</dd></div></dl>
       <div className="data-form-actions"><button className="button button--secondary" type="button" onClick={()=>setSeleccionado(null)}>Cerrar</button></div>
     </DataPanel>}
-    {panel && !admin && <DataPanel title="Registrar movimiento de efectivo" subtitle="Una vez guardado no se modifica ni elimina; quedará en el historial." onClose={()=>!guardando && setPanel(false)}>
+    {panel && !admin && <DataPanel title="Registrar movimiento de efectivo" subtitle="Una vez guardado no se modifica ni elimina; quedará en el historial." onClose={()=>!guardando && setPanel(false)} locked={guardando}>
       <form className="data-form" onSubmit={registrar}><div className="data-form-grid">
-        <label className="data-field"><span>Sucursal</span><input readOnly value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/></label>
+        <ReadOnlyField label="Sucursal" value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/>
         <label className="data-field"><span>Tipo *</span><select value={form.tipo} onChange={e=>setForm(f=>({...f,tipo:e.target.value}))}><option value="INGRESO">Ingreso</option><option value="EGRESO">Egreso</option></select></label>
         <label className="data-field data-field--wide"><span>Concepto *</span><input required maxLength={250} value={form.concepto} onChange={e=>setForm(f=>({...f,concepto:e.target.value}))} placeholder="Ej. Ingreso registrado en sucursal"/></label>
         <label className="data-field"><span>Monto (GTQ) *</span><input required type="text" inputMode="decimal" placeholder="125.50" value={form.monto} onChange={e=>setForm(f=>({...f,monto:e.target.value}))}/></label>

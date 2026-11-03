@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Brand } from '../components/Brand.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
@@ -62,7 +63,7 @@ export function LoginPage() {
             </div>
           </div>
           {error && <div className="form-error" role="alert"><Icon name="alert" size={18}/><span>{error}</span></div>}
-          <button className="button button--primary login-submit" disabled={enviando} type="submit">{enviando ? 'Verificando credenciales…' : 'Iniciar sesión'}{!enviando && <Icon name="arrowRight" size={19}/>}</button>
+          <button className="button button--primary login-submit" disabled={enviando} type="submit">{enviando ? <LoadingIndicator inline label="Verificando credenciales…"/> : 'Iniciar sesión'}{!enviando && <Icon name="arrowRight" size={19}/>}</button>
         </form>
         <div className="login-help"><Icon name="lock" size={18}/><span>Acceso exclusivo para usuarios autorizados. Las credenciales de Oracle permanecen en el servidor.</span></div>
       </div>

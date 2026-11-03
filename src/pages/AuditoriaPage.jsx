@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
+import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useSucursalesAdmin } from '../components/AdminUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { listarAuditoriaApi, resumenAuditoriaApi, detalleAuditoriaApi, LIMITE_AUDITORIA } from '../services/auditoriaApi.js';
@@ -18,18 +19,18 @@ function ResumenAuditoria({ estado }) {
   const sucursales = Array.isArray(datos?.por_sucursal) ? datos.por_sucursal : [];
   return <section className="data-card audit-summary" aria-label="Resumen de auditoría">
     <div className="admin-summary-title"><div><h2>Resumen de operaciones</h2><p>Los totales corresponden a los filtros aplicados y se calculan en Oracle XE.</p></div>
-      {cargando && <span className="admin-loading" role="status">Actualizando…</span>}
+      {cargando && <LoadingIndicator inline label="Actualizando resumen…"/>}
     </div>
     <ErrorNotice message={error}/>
     <div className="audit-total"><span>Total de operaciones</span><strong>{error || !datos ? '—' : Number(datos.total ?? 0).toLocaleString('es-GT')}</strong></div>
-    <div className="audit-breakdowns">
+    {!cargando && !error && <div className="audit-breakdowns">
       <details><summary>Operaciones por entidad ({entidades.length})</summary>
         {entidades.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Entidad</th><th className="number-cell">Cantidad</th></tr></thead><tbody>{entidades.map((f, index) => <tr key={`${f.entidad}-${index}`}><td><span className="mono-tag">{f.entidad}</span></td><td className="number-cell">{Number(f.cantidad).toLocaleString('es-GT')}</td></tr>)}</tbody></table></div> : <p className="audit-empty">Sin operaciones para estos filtros.</p>}
       </details>
       <details><summary>Operaciones por sucursal ({sucursales.length})</summary>
         {sucursales.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Sucursal</th><th className="number-cell">Cantidad</th></tr></thead><tbody>{sucursales.map((f, index) => <tr key={`${f.id_sucursal ?? 'global'}-${index}`}><td>{sucursalAuditoria(f.sucursal, f.id_sucursal)}</td><td className="number-cell">{Number(f.cantidad).toLocaleString('es-GT')}</td></tr>)}</tbody></table></div> : <p className="audit-empty">Sin operaciones para estos filtros.</p>}
       </details>
-    </div>
+    </div>}
   </section>;
 }
 
@@ -45,8 +46,8 @@ function DetalleAuditoria({ api, id, onClose }) {
     return () => abort.abort();
   }, [api, id, reintento]);
   const d = estado.datos;
-  return <DataPanel title={`Registro de auditoría #${id}`} subtitle="Historial de solo lectura; no es posible modificar ni eliminar este registro." onClose={onClose}>
-    {estado.cargando && <p className="audit-loading" role="status">Consultando detalle…</p>}
+  return <DataPanel title={`Registro de auditoría #${id}`} subtitle="Historial de solo lectura; no es posible modificar ni eliminar este registro." onClose={onClose} readOnly>
+    {estado.cargando && <LoadingIndicator label="Consultando detalle de auditoría…"/>}
     <ErrorNotice message={estado.error} retry={() => setReintento(n => n+1)}/>
     {d && <>
       <dl className="admin-detail-list">

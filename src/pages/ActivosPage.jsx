@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { DataPanel, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
+import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { ConfirmacionEscritura, ResumenAdmin, SucursalFiltro, useResumenAdmin, useSucursalesAdmin } from '../components/AdminUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -36,7 +36,7 @@ export function ActivosPage() {
   function refrescarTodo() { refrescar(); setRevResumen(v=>v+1); }
   function nuevo() { setPanel('nuevo'); setForm(EMPTY(usuario.id_sucursal)); setErrorForm(''); }
   function editar(reg) {
-    setPanel({ id: reg.id_activo, id_sucursal: reg.id_sucursal });
+    setPanel({ id: reg.id_activo, id_sucursal: reg.id_sucursal, codigo: reg.codigo });
     setForm({ descripcion: reg.descripcion, valor: String(reg.valor), estado: reg.estado }); setErrorForm('');
   }
   async function guardar(event) {
@@ -69,10 +69,11 @@ export function ActivosPage() {
     <TableState loading={cargando} error={error} length={filas.length} emptyMessage="No hay activos para los filtros seleccionados."/>
     {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}</section>
     {admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>El administrador consulta la valoración de activos; únicamente el encargado de cada sucursal puede registrar o modificar sus activos.</span></div>}
-    {panel !== null && !admin && <DataPanel title={panel === 'nuevo' ? 'Registrar activo fijo' : `Editar activo fijo #${panel.id}`} subtitle="El valor es el monto declarado; no se calcula depreciación." onClose={()=>!guardando && setPanel(null)}>
+    {panel !== null && !admin && <DataPanel title={panel === 'nuevo' ? 'Registrar activo fijo' : `Editar activo fijo #${panel.id}`} subtitle="El valor es el monto declarado; no se calcula depreciación." onClose={()=>!guardando && setPanel(null)} locked={guardando}>
       <form className="data-form" onSubmit={guardar}><div className="data-form-grid">
-        {panel === 'nuevo' && <><label className="data-field"><span>Sucursal</span><input value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`} readOnly/></label>
+        {panel === 'nuevo' && <><ReadOnlyField label="Sucursal" value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/>
         <label className="data-field"><span>Código *</span><input required maxLength={30} value={form.codigo} onChange={e=>setForm(f=>({...f,codigo:e.target.value}))} placeholder="ACT-001"/></label></>}
+        {panel !== 'nuevo' && <><ReadOnlyField label="Código del activo" value={panel.codigo}/><ReadOnlyField label="Sucursal" value={propia?.nombre || `Sucursal ${usuario.id_sucursal}`}/></>}
         <label className="data-field data-field--wide"><span>Descripción *</span><input required maxLength={200} value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} placeholder="Ej. Equipo de cómputo"/></label>
         <label className="data-field"><span>Valor (GTQ) *</span><input required type="text" inputMode="decimal" placeholder="1500.00" value={form.valor} onChange={e=>setForm(f=>({...f,valor:e.target.value}))}/></label>
         {panel !== 'nuevo' && <label className="data-field"><span>Estado *</span><select value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}><option value="VIGENTE">Vigente</option><option value="BAJA">Baja</option></select></label>}
