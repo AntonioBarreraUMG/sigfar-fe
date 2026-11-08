@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon.jsx';
 import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useSucursalesAdmin } from '../components/AdminUI.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { listarAuditoriaApi, resumenAuditoriaApi, detalleAuditoriaApi, LIMITE_AUDITORIA } from '../services/auditoriaApi.js';
+import { listarAuditoriaApi, resumenAuditoriaApi, detalleAuditoriaApi, opcionesFiltrosAuditoriaApi, opcionesRegistrosAuditoriaApi, LIMITE_AUDITORIA } from '../services/auditoriaApi.js';
 import { fechaLocal } from '../utils/catalogos.js';
 import {
   FILTROS_VACIOS_AUDITORIA, puedeVerAuditoria, paginasAuditoria,
@@ -79,6 +79,39 @@ export function AuditoriaPage() {
   const [lista, setLista] = useState(ESTADO_INICIAL);
   const [resumen, setResumen] = useState({ datos: null, cargando: true, error: '' });
   const autorizado = puedeVerAuditoria(usuario?.rol);
+  const [opcionesFiltros, setOpcionesFiltros] = useState({ usuarios: [], entidades: [], acciones: [] });
+  const [cargandoFiltros, setCargandoFiltros] = useState(true);
+  const [errorOpciones, setErrorOpciones] = useState('');
+  const [revisionOpciones, setRevisionOpciones] = useState(0);
+  const [registrosOpciones, setRegistrosOpciones] = useState([]);
+  const [cargandoRegistros, setCargandoRegistros] = useState(false);
+  const [errorRegistros, setErrorRegistros] = useState('');
+
+  useEffect(() => {
+    if (!autorizado) return undefined;
+    const abort = new AbortController();
+    setCargandoFiltros(true); setErrorOpciones('');
+    opcionesFiltrosAuditoriaApi(api, { signal: abort.signal }).then(data => {
+      if (!abort.signal.aborted) {
+        setOpcionesFiltros(data); setCargandoFiltros(false);
+      }
+    }).catch(err => {
+      if (!abort.signal.aborted) { setErrorOpciones(err.message || 'No se pudieron consultar los filtros.'); setCargandoFiltros(false); }
+    });
+    return () => abort.abort();
+  }, [api, autorizado, revisionOpciones]);
+
+  useEffect(() => {
+    if (!autorizado || !draft.entidad) { setRegistrosOpciones([]); setCargandoRegistros(false); setErrorRegistros(''); return undefined; }
+    const abort = new AbortController();
+    setCargandoRegistros(true); setErrorRegistros(''); setRegistrosOpciones([]);
+    opcionesRegistrosAuditoriaApi(api, draft.entidad, { signal: abort.signal }).then(ids => {
+      if (!abort.signal.aborted) { setRegistrosOpciones(ids); setCargandoRegistros(false); }
+    }).catch(err => {
+      if (!abort.signal.aborted) { setErrorRegistros(err.message || 'No se pudieron consultar los IDs de esta entidad.'); setCargandoRegistros(false); }
+    });
+    return () => abort.abort();
+  }, [api, autorizado, draft.entidad]);
 
   useEffect(() => {
     if (!autorizado) return undefined;
@@ -135,14 +168,26 @@ export function AuditoriaPage() {
         <div className="audit-filters-heading"><h2>Filtrar registros</h2><p>Introduce únicamente los criterios que necesites; los filtros se aplican al historial y al resumen.</p></div>
         <div className="audit-filter-grid">
           <label className="data-field"><span>Sucursal</span><select value={draft.id_sucursal} onChange={e=>setDraft(d=>({...d,id_sucursal:e.target.value}))}><option value="">Todas (incluye operaciones globales)</option>{sucursales.map(s=><option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre} · ID {s.id_sucursal}</option>)}</select></label>
-          <label className="data-field"><span>Usuario (ID)</span><input type="number" min="1" step="1" placeholder="Cualquier usuario" value={draft.id_usuario} onChange={e=>setDraft(d=>({...d,id_usuario:e.target.value}))}/></label>
-          <label className="data-field"><span>Entidad</span><input type="text" maxLength={60} placeholder="Ej.: TRANSFERENCIA" value={draft.entidad} onChange={e=>setDraft(d=>({...d,entidad:e.target.value.toUpperCase()}))}/></label>
-          <label className="data-field"><span>Acción</span><input type="text" maxLength={40} placeholder="Ej.: CREAR" value={draft.accion} onChange={e=>setDraft(d=>({...d,accion:e.target.value.toUpperCase()}))}/></label>
-          <label className="data-field"><span>ID del registro afectado</span><input type="number" min="1" step="1" value={draft.id_registro} onChange={e=>setDraft(d=>({...d,id_registro:e.target.value}))} placeholder="Cualquiera"/></label>
+          <label className="data-field"><span>Usuario</span><select value={draft.id_usuario} disabled={cargandoFiltros || Boolean(errorOpciones)} onChange={e=>setDraft(d=>({...d,id_usuario:e.target.value}))}>
+            <option value="">Todos los usuarios</option>{opcionesFiltros.usuarios.map(u=><option key={u.id_usuario} value={u.id_usuario}>{u.nombre} — {u.correo}</option>)}
+          </select></label>
+          <label className="data-field"><span>Entidad</span><select value={draft.entidad} disabled={cargandoFiltros || Boolean(errorOpciones)} onChange={e=>setDraft(d=>({...d,entidad:e.target.value,id_registro:''}))}>
+            <option value="">Todas las entidades</option>{opcionesFiltros.entidades.map(entidad=><option value={entidad} key={entidad}>{entidad}</option>)}
+          </select></label>
+          <label className="data-field"><span>Acción</span><select value={draft.accion} disabled={cargandoFiltros || Boolean(errorOpciones)} onChange={e=>setDraft(d=>({...d,accion:e.target.value}))}>
+            <option value="">Todas las acciones</option>{opcionesFiltros.acciones.map(accion=><option value={accion} key={accion}>{accion}</option>)}
+          </select></label>
+          <label className="data-field"><span>Registro afectado</span><select value={draft.id_registro} disabled={!draft.entidad || cargandoRegistros || Boolean(errorRegistros)} onChange={e=>setDraft(d=>({...d,id_registro:e.target.value}))}>
+            <option value="">Todos los registros de la entidad</option>{registrosOpciones.map(id=><option value={id} key={id}>Registro #{id}</option>)}
+          </select></label>
           <label className="data-field"><span>Fecha desde</span><input type="date" value={draft.fecha_desde} onChange={e=>setDraft(d=>({...d,fecha_desde:e.target.value}))}/></label>
           <label className="data-field"><span>Fecha hasta</span><input type="date" value={draft.fecha_hasta} onChange={e=>setDraft(d=>({...d,fecha_hasta:e.target.value}))}/></label>
         </div>
+        {cargandoFiltros && <LoadingIndicator inline label="Cargando opciones de auditoría…"/>}
+        {cargandoRegistros && <LoadingIndicator inline label="Cargando registros de la entidad…"/>}
         <ErrorNotice message={errorSucursales} retry={reintentarSucursales}/>
+        <ErrorNotice message={errorOpciones} retry={() => setRevisionOpciones(v=>v+1)}/>
+        <ErrorNotice message={errorRegistros}/>
         <ErrorNotice message={errorFiltros}/>
         <div className="audit-filter-actions"><button className="button button--secondary" type="button" onClick={limpiar}>Limpiar filtros</button><button className="button button--primary" type="submit"><Icon name="search" size={17}/> Aplicar filtros</button></div>
       </form>

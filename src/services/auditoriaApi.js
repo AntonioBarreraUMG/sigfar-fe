@@ -20,3 +20,21 @@ export function detalleAuditoriaApi(api, id, { signal } = {}) {
   }
   return api(`/auditoria/registros/${id}`, { signal }).then(r => r.datos);
 }
+
+// Catálogos derivados de la bitácora real, con acceso exclusivo a ADMIN_CENTRAL.
+export function opcionesFiltrosAuditoriaApi(api, { signal } = {}) {
+  return api('/auditoria/opciones-filtros', { signal }).then(r => r.datos);
+}
+
+export async function opcionesRegistrosAuditoriaApi(api, entidad, { signal, maxPages = 20 } = {}) {
+  if (!entidad) return [];
+  const todos = [];
+  for (let pagina = 0; pagina < maxPages; pagina++) {
+    const query = queryParams({ entidad, desde: pagina * 100, limite: 100 });
+    const result = await api(`/auditoria/opciones-registros?${query}`, { signal });
+    if (!Array.isArray(result.datos)) throw new Error('Respuesta inválida para opciones de registros.');
+    todos.push(...result.datos);
+    if (result.datos.length < 100) return todos;
+  }
+  throw new Error('La entidad tiene demasiados registros para una lista única. Utiliza otros filtros o consulta la página del historial.');
+}
