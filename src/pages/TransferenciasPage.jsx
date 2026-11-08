@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon.jsx';
 import { LoadingIndicator } from '../components/LoadingIndicator.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { usePagedData } from '../hooks/usePagedData.js';
-import { listOpcionesApi, PAGE_LIMIT } from '../services/catalogosApi.js';
+import { listOpcionesApi, listDestinosTransferenciaApi, PAGE_LIMIT } from '../services/catalogosApi.js';
 import {
   listTransferenciasApi, getTransferenciaApi, createTransferenciaApi,
   dispatchTransferenciaApi, receiveTransferenciaApi
@@ -63,6 +63,7 @@ export function TransferenciasPage() {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroSucursal, setFiltroSucursal] = useState('');
   const [sucursales, setSucursales] = useState([]);
+  const [destinos, setDestinos] = useState([]);
   const [medicamentos, setMedicamentos] = useState([]);
   const [errorOpciones, setErrorOpciones] = useState('');
   const [cargandoOpciones, setCargandoOpciones] = useState(true);
@@ -79,21 +80,21 @@ export function TransferenciasPage() {
   const [mensaje, setMensaje] = useState('');
   const siguienteLinea = useRef(2);
 
-  // Los encargados reciben únicamente su sucursal desde /sucursales.
-  // La selección de otra sucursal se realiza por ID, y se valida en el backend.
+  // Origen y destino se eligen sin escribir IDs; el destino tiene un catálogo limitado por rol.
   useEffect(() => {
     const abort = new AbortController();
     setErrorOpciones(''); setCargandoOpciones(true);
     Promise.all([
       listOpcionesApi(api, 'sucursales', { signal: abort.signal }),
-      listOpcionesApi(api, 'medicamentos', { signal: abort.signal })
-    ]).then(([suc, med]) => {
-      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); setCargandoOpciones(false); }
+      listOpcionesApi(api, 'medicamentos', { signal: abort.signal }),
+      ...(encargado ? [listDestinosTransferenciaApi(api, { signal: abort.signal })] : [])
+    ]).then(([suc, med, destinosDisponibles]) => {
+      if (!abort.signal.aborted) { setSucursales(suc); setMedicamentos(med); setDestinos(destinosDisponibles || []); setCargandoOpciones(false); }
     }).catch(e => {
       if (!abort.signal.aborted) { setErrorOpciones(e.message || 'No se pudieron cargar las opciones.'); setCargandoOpciones(false); }
     });
     return () => abort.abort();
-  }, [api, revisionOpciones]);
+  }, [api, revisionOpciones, encargado]);
 
   const cargar = useCallback(opts => listTransferenciasApi(api, {
     estado: filtroEstado,
@@ -144,6 +145,9 @@ export function TransferenciasPage() {
     if (operando || !encargado) return;
     setErrorForm('');
     try {
+      if (!destinos.some(s => String(s.id_sucursal) === String(form.id_sucursal_destino))) {
+        throw new Error('Selecciona una sucursal destino activa de la lista.');
+      }
       const values = transferenciaPayload(form, usuario, medicamentos);
       setOperando(true);
       const created = await createTransferenciaApi(api, values);
@@ -207,7 +211,7 @@ export function TransferenciasPage() {
       {!error && <Pager desde={desde} limite={PAGE_LIMIT} count={filas.length} onPageChange={setDesde} disabled={cargando}/>}
     </section>
     {admin && <div className="inline-tip"><Icon name="lock" size={18}/><span>El administrador puede consultar todas las transferencias, pero el despacho y la recepción corresponden únicamente a los encargados de las sucursales involucradas.</span></div>}
-    {encargado && <div className="inline-tip"><Icon name="info" size={18}/><span>Solo puedes despachar desde tu farmacia y recibir en ella. Para transferir a una sucursal sin historial, ingresa su ID de catálogo; el backend valida que exista y esté activa.</span></div>}
+    {encargado && <div className="inline-tip"><Icon name="info" size={18}/><span>Solo puedes despachar desde tu farmacia y recibir en ella. Elige una sucursal destino activa en la lista disponible.</span></div>}
     {panel === 'detalle' && <DetalleTransferencia detalle={detalle} cargando={cargandoDetalle} error={errorDetalle} operando={operando} usuario={usuario}
       onClose={() => { if (!operando) setPanel(null); }} onRetry={() => setRevisionDetalle(v => v + 1)} onAccion={cambiarEstado}/>}
     {confirmationModal}
@@ -215,10 +219,14 @@ export function TransferenciasPage() {
       <form className="data-form" onSubmit={registrar}>
         <div className="data-form-grid">
           <ReadOnlyField label="Sucursal origen" value={propias ? `${propias.nombre} (ID ${usuario.id_sucursal})` : `Mi sucursal · ID ${usuario.id_sucursal}`}/>
-          <label className="data-field"><span>ID sucursal destino *</span><input type="number" inputMode="numeric" min="1" max="9999999999" step="1" placeholder="Ej. 2" required value={form.id_sucursal_destino}
-            onChange={e => setForm(f => ({ ...f, id_sucursal_destino: e.target.value }))}/></label>
+          <label className="data-field"><span>Sucursal destino *</span><select required value={form.id_sucursal_destino} disabled={operando || cargandoOpciones || Boolean(errorOpciones)}
+            onChange={e => setForm(f => ({ ...f, id_sucursal_destino: e.target.value }))}>
+            <option value="">Selecciona una sucursal activa</option>
+            {destinos.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.codigo} · {s.nombre} — {s.municipio}, {s.departamento}</option>)}
+          </select></label>
         </div>
-        <div className="data-advice"><Icon name="info" size={17}/><span>Tu rol solo puede consultar su propia sucursal. Solicita al administrador el ID del destino en el catálogo de Sucursales; el servidor rechazará un ID inexistente o inactivo.</span></div>
+        <div className="data-advice"><Icon name="info" size={17}/><span>La lista muestra sucursales activas distintas de tu farmacia. El backend validará nuevamente el destino al guardar.</span></div>
+        {!cargandoOpciones && !errorOpciones && !destinos.length && <p className="muted">No hay otras sucursales activas disponibles para transferencias.</p>}
         <div className="transfer-lines-heading"><h3>Medicamentos a transferir</h3><span>Máximo 50 renglones</span></div>
         <div className="transfer-lines">
           {form.detalles.map((linea, i) => <div className="transfer-line" key={linea.key}>
@@ -234,7 +242,7 @@ export function TransferenciasPage() {
         <ErrorNotice message={errorForm}/>
         <div className="data-form-actions">
           <button type="button" className="button button--secondary" disabled={operando} onClick={() => setPanel(null)}>Cancelar</button>
-          <button type="submit" className="button button--primary" disabled={operando || cargandoOpciones || Boolean(errorOpciones) || !medicamentosActivos.length}>{operando ? 'Registrando…' : 'Registrar transferencia'}</button>
+          <button type="submit" className="button button--primary" disabled={operando || cargandoOpciones || Boolean(errorOpciones) || !medicamentosActivos.length || !destinos.length}>{operando ? 'Registrando…' : 'Registrar transferencia'}</button>
         </div>
       </form>
     </DataPanel>}

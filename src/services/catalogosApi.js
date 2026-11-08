@@ -42,3 +42,16 @@ export async function listOpcionesApi(api, resource, { signal, maxPages = 20 } =
   // No ocultamos silenciosamente opciones si se superó el máximo de consulta.
   throw new Error('El catálogo supera el límite de carga de opciones de esta versión. Consulta por página.');
 }
+
+// Opciones de sucursales activas para transferencias, sin requerir permisos de administrador.
+export async function listDestinosTransferenciaApi(api, { signal, maxPages = 20 } = {}) {
+  const rows = [];
+  for (let page = 0; page < maxPages; page++) {
+    const result = await api(`/sucursales/destinos-transferencia?desde=${page * 100}&limite=100`, { signal });
+    const list = result.datos;
+    if (!Array.isArray(list)) throw new Error('Respuesta de destinos inválida.');
+    rows.push(...list);
+    if (list.length < 100) return rows;
+  }
+  throw new Error('Hay demasiadas sucursales para mostrar el catálogo completo de destinos.');
+}

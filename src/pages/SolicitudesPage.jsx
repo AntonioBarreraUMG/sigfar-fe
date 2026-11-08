@@ -1,3 +1,4 @@
+import { UbicacionSelect } from '../components/UbicacionSelect.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DataPanel, ReadOnlyField, ErrorNotice, PageHeading, Pager, SuccessNotice, TableState } from '../components/DataUI.jsx';
 import { Icon } from '../components/Icon.jsx';
@@ -304,8 +305,10 @@ export function SolicitudesPage() {
       <form className="data-form" onSubmit={registrar}><div className="data-form-grid">
         <label className="data-field"><span>Nombre del cliente *</span><input required maxLength={120} disabled={operando || cargandoPrevias} value={form.cliente_nombre} onChange={e => cambiarForm('cliente_nombre',e.target.value)}/></label>
         <label className="data-field"><span>Teléfono *</span><input required maxLength={20} disabled={operando || cargandoPrevias} value={form.cliente_telefono} onChange={e => cambiarForm('cliente_telefono',e.target.value)}/></label>
-        <label className="data-field"><span>Departamento *</span><input required maxLength={80} disabled={operando || cargandoPrevias} value={form.departamento_entrega} onChange={e => cambiarForm('departamento_entrega',e.target.value)} placeholder="Ej. Jutiapa"/></label>
-        <label className="data-field"><span>Municipio *</span><input required maxLength={80} disabled={operando || cargandoPrevias} value={form.municipio_entrega} onChange={e => cambiarForm('municipio_entrega',e.target.value)} placeholder="Ej. Asunción Mita"/></label>
+        <UbicacionSelect departamento={form.departamento_entrega} municipio={form.municipio_entrega}
+          disabled={operando || cargandoPrevias}
+          onDepartamentoChange={value => { setForm(f => ({ ...f, departamento_entrega: value, municipio_entrega: '' })); setOpcionesPrevias(null); setErrorForm(''); }}
+          onMunicipioChange={value => cambiarForm('municipio_entrega', value)}/>
         <label className="data-field data-field--wide"><span>Dirección de entrega *</span><textarea required maxLength={250} disabled={operando || cargandoPrevias} rows={2} value={form.direccion_entrega} onChange={e => cambiarForm('direccion_entrega',e.target.value)}/></label>
       </div>
       <Renglones detalles={form.detalles} setDetalles={cambiarDetalles} medicamentos={medicamentos} disabled={operando || cargandoPrevias} nuevaClave={() => siguienteLinea.current++}/>

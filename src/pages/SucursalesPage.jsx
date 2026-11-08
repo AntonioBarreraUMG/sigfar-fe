@@ -1,3 +1,4 @@
+import { UbicacionSelect } from '../components/UbicacionSelect.jsx';
 import { useCallback, useState } from 'react';
 import { Icon } from '../components/Icon.jsx';
 import { DataPanel, ReadOnlyField, ErrorNotice, Field, PageHeading, Pager, StatusLabel, SuccessNotice, TableState } from '../components/DataUI.jsx';
@@ -26,7 +27,8 @@ export function SucursalesPage() {
   }
   function abrirNuevo() { setPanel('nuevo'); setForm({ ...EMPTY }); setErrorForm(''); setMensaje(''); }
   function cerrar() { if (!guardando) { setPanel(null); setErrorForm(''); } }
-  function cambiar(field, value) { setForm(v => ({ ...v, [field]: value })); }
+  function cambiar(field, value) { setForm(v => field === 'departamento'
+    ? ({ ...v, departamento: value, municipio: '' }) : ({ ...v, [field]: value })); }
   async function guardar(event) {
     event.preventDefault();
     if (guardando) return;
@@ -54,8 +56,9 @@ export function SucursalesPage() {
         <Field label="Código *" name="codigo" value={form.codigo} onChange={cambiar} maxLength={20} required/>
         <Field label="Nombre *" name="nombre" value={form.nombre} onChange={cambiar} maxLength={120} required/>
         <label className="data-field"><span>Tipo de establecimiento *</span><select value={form.tipo} onChange={e => cambiar('tipo', e.target.value)}>{TIPOS_SUCURSAL.map(t => <option value={t.value} key={t.value}>{t.label}</option>)}</select></label>
-        <Field label="Departamento *" name="departamento" value={form.departamento} onChange={cambiar} maxLength={80} required/>
-        <Field label="Municipio *" name="municipio" value={form.municipio} onChange={cambiar} maxLength={80} required/>
+        <UbicacionSelect departamento={form.departamento} municipio={form.municipio}
+          onDepartamentoChange={value => cambiar('departamento', value)}
+          onMunicipioChange={value => cambiar('municipio', value)} disabled={guardando}/>
         <Field label="Tiempo de entrega (minutos) *" name="tiempo_entrega_min" type="number" min={1} max={99999} step={1} value={form.tiempo_entrega_min} onChange={cambiar} required/>
         <Field label="Dirección *" name="direccion" value={form.direccion} onChange={cambiar} maxLength={250} required/>
         <label className="data-field"><span>Estado</span><select value={form.activa} onChange={e => cambiar('activa', e.target.value)}><option value="S">Activa</option><option value="N">Inactiva</option></select></label>
