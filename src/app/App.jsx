@@ -15,6 +15,7 @@ import { PlanillasPage } from '../pages/PlanillasPage.jsx';
 import { ActivosPage } from '../pages/ActivosPage.jsx';
 import { SolicitudesPage } from '../pages/SolicitudesPage.jsx';
 import { AuditoriaPage } from '../pages/AuditoriaPage.jsx';
+import { UsuariosPage } from '../pages/UsuariosPage.jsx';
 import { UnauthorizedPage } from '../pages/UnauthorizedPage.jsx';
 import { NotFoundPage } from '../pages/NotFoundPage.jsx';
 import { MODULOS, puedeAcceder } from '../utils/access.js';
@@ -24,7 +25,7 @@ function PublicLogin() {
   if (estado === 'comprobando') return <LoadingScreen />;
   return estado === 'autenticado' ? <Navigate to="/" replace /> : <LoginPage />;
 }
-const IMPLEMENTADOS = Object.freeze({ sucursales: SucursalesPage, medicamentos: MedicamentosPage, inventarios: InventariosPage, transferencias: TransferenciasPage, efectivo: EfectivoPage, planillas: PlanillasPage, activos: ActivosPage, solicitudes: SolicitudesPage, auditoria: AuditoriaPage });
+const IMPLEMENTADOS = Object.freeze({ sucursales: SucursalesPage, medicamentos: MedicamentosPage, inventarios: InventariosPage, transferencias: TransferenciasPage, efectivo: EfectivoPage, planillas: PlanillasPage, activos: ActivosPage, solicitudes: SolicitudesPage, auditoria: AuditoriaPage, usuarios: UsuariosPage });
 function AllowedModule({ modulo }) {
   const { usuario } = useAuth();
   if (!puedeAcceder(usuario?.rol, modulo)) return <UnauthorizedPage />;

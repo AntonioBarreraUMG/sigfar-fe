@@ -23,6 +23,7 @@ export const MODULOS = Object.freeze([
   { id: 'planillas', nombre: 'Planillas', ruta: '/planillas', icono: 'receipt', roles: GESTION, descripcion: 'Gastos por sucursal y período.' },
   { id: 'activos', nombre: 'Activos fijos', ruta: '/activos', icono: 'briefcase', roles: GESTION, descripcion: 'Registro y valoración de activos.' },
   { id: 'solicitudes', nombre: 'Solicitudes y entregas', ruta: '/solicitudes', icono: 'truck', roles: TODOS, descripcion: 'Disponibilidad y coordinación de entregas.' },
+  { id: 'usuarios', nombre: 'Usuarios', ruta: '/usuarios', icono: 'user', roles: [ROLES.ADMIN], descripcion: 'Cuentas, roles y acceso a sucursales.' },
   { id: 'auditoria', nombre: 'Auditoría', ruta: '/auditoria', icono: 'shield', roles: [ROLES.ADMIN], descripcion: 'Trazabilidad centralizada de operaciones.' }
 ]);
 

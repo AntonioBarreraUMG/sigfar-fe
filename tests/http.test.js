@@ -47,7 +47,7 @@ test('login con credenciales incorrectas no invoca cierre de sesión', async () 
   let invalidations = 0;
   const api = createApiClient({
     onUnauthorized: () => invalidations++,
-    fetcher: async () => response(401, { error: { codigo: 'CREDENCIALES_INVALIDAS', mensaje: 'Credenciales incorrectas.' } })
+    fetcher: async () => response(401, { error: { codigo: 'CREDENCIALES_INVALIDAS', mensaje: 'Credenciales incorrectas o usuario inactivo.' } })
   });
   await assert.rejects(loginApi(api, { correo: 'usuario@sigfar.test', clave: 'mal' }), { status: 401 });
   assert.equal(invalidations, 0);
