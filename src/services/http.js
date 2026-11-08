@@ -13,7 +13,7 @@ function parseJson(raw) {
   catch { return null; }
 }
 
-// Cliente HTTP desacoplado de React, para reutilizarlo en los módulos de las siguientes etapas.
+// Cliente HTTP compartido por los módulos de SIGFAR.
 export function createApiClient({ fetcher = globalThis.fetch, getToken = () => null, onUnauthorized = () => {} } = {}) {
   return async function request(path, { method = 'GET', body, signal, authorized = true } = {}) {
     if (!/^\/[a-z0-9/_?=&%.-]*$/i.test(path) || path.startsWith('//')) {

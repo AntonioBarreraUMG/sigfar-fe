@@ -41,7 +41,7 @@ export function LoginPage() {
             <div className="showcase-card showcase-card--three"><span className="visual-icon"><Icon name="shield" size={22}/></span><span>Auditoría<small>Operaciones trazables</small></span><Icon name="check" size={18}/></div>
           </div>
         </div>
-        <p className="showcase-footer">SIGFAR · Proyecto académico de Ingeniería en Sistemas</p>
+        <p className="showcase-footer">SIGFAR · Sistema Integral de Gestión de Farmacias</p>
       </div>
     </section>
     <section className="login-panel" aria-labelledby="login-heading">
@@ -53,7 +53,7 @@ export function LoginPage() {
         <form onSubmit={enviar} noValidate>
           <div className="form-field">
             <label htmlFor="correo">Correo electrónico</label>
-            <input id="correo" name="correo" type="email" autoComplete="username" inputMode="email" maxLength="150" value={correo} onChange={e => setCorreo(e.target.value)} placeholder="usuario@sigfar.test" required disabled={enviando} />
+            <input id="correo" name="correo" type="email" autoComplete="username" inputMode="email" maxLength="150" value={correo} onChange={e => setCorreo(e.target.value)} placeholder="correo@dominio.com" required disabled={enviando} />
           </div>
           <div className="form-field">
             <label htmlFor="clave">Contraseña</label>
@@ -67,7 +67,7 @@ export function LoginPage() {
         </form>
         <div className="login-help"><Icon name="lock" size={18}/><span>Acceso exclusivo para usuarios autorizados. Las credenciales de Oracle permanecen en el servidor.</span></div>
       </div>
-      <p className="login-panel-footer">Sistema Integral de Gestión de Farmacias · Prototipo académico</p>
+      <p className="login-panel-footer">Sistema Integral de Gestión de Farmacias</p>
     </section>
   </main>;
 }

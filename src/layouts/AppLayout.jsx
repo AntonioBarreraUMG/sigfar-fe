@@ -33,7 +33,7 @@ export function AppLayout() {
         </nav>
       </div>
       <div className="sidebar-bottom">
-        <div className="sidebar-note"><Icon name="info" size={17}/><span>Prototipo académico<br/><strong>Frontend · Auditoría centralizada</strong></span></div>
+        <div className="sidebar-note"><Icon name="shield" size={17}/><span>Acceso protegido<br/><strong>Permisos según tu rol</strong></span></div>
         <button className="sidebar-logout" type="button" onClick={salir}><Icon name="logout" size={18}/> Cerrar sesión</button>
       </div>
     </aside>
@@ -44,13 +44,12 @@ export function AppLayout() {
           <span className="breadcrumb">SIGFAR</span><Icon name="chevronRight" size={15} className="breadcrumb-separator"/><span className="breadcrumb-current">{nombre}</span>
         </div>
         <div className="topbar-right">
-          <span className="topbar-stage">ETAPA 6</span>
           <span className="profile-avatar" aria-hidden="true">{iniciales || 'SF'}</span>
           <span className="profile-name">{usuario.nombre.split(' ')[0]}<small>{nombreRol(usuario.rol)}</small></span>
         </div>
       </header>
       <main className="main-content" id="contenido"><Outlet /></main>
-      <footer className="app-footer">SIGFAR · Prototipo académico · Universidad Mariano Gálvez de Guatemala</footer>
+      <footer className="app-footer">SIGFAR · Sistema Integral de Gestión de Farmacias</footer>
     </div>
   </div>;
 }
