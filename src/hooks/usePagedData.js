@@ -11,12 +11,21 @@ export function usePagedData(loader, { desde = 0, limite = PAGE_LIMIT } = {}) {
     const abort = new AbortController();
     setCargando(true);
     setError('');
-    loader({ desde, limite, signal: abort.signal }).then(rows => {
-      if (!abort.signal.aborted) { setFilas(rows); setCargando(false); }
-    }).catch(err => {
-      if (!abort.signal.aborted) { setFilas([]); setError(err.message || 'No se pudieron cargar los datos.'); setCargando(false); }
-    });
+    loader({ desde, limite, signal: abort.signal })
+      .then((rows) => {
+        if (!abort.signal.aborted) {
+          setFilas(rows);
+          setCargando(false);
+        }
+      })
+      .catch((err) => {
+        if (!abort.signal.aborted) {
+          setFilas([]);
+          setError(err.message || 'No se pudieron cargar los datos.');
+          setCargando(false);
+        }
+      });
     return () => abort.abort();
   }, [loader, desde, limite, revision]);
-  return { filas, cargando, error, refrescar: () => setRevision(v => v + 1) };
+  return { filas, cargando, error, refrescar: () => setRevision((v) => v + 1) };
 }

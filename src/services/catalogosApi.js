@@ -10,24 +10,40 @@ export function queryParams(values = {}) {
   return query.toString();
 }
 
-export function listApi(api, resource, filters = {}, { desde = 0, limite = PAGE_LIMIT, signal } = {}) {
-  if (!['sucursales', 'medicamentos', 'inventarios'].includes(resource)) throw new Error('Recurso no autorizado.');
+export function listApi(
+  api,
+  resource,
+  filters = {},
+  { desde = 0, limite = PAGE_LIMIT, signal } = {},
+) {
+  if (!['sucursales', 'medicamentos', 'inventarios'].includes(resource))
+    throw new Error('Recurso no autorizado.');
   const query = queryParams({ ...filters, desde, limite });
-  return api(`${asPath(resource)}?${query}`, { signal }).then(result => result.datos);
+  return api(`${asPath(resource)}?${query}`, { signal }).then((result) => result.datos);
 }
 
 export function listMovimientosApi(api, filters = {}, opts = {}) {
-  const query = queryParams({ ...filters, desde: opts.desde ?? 0, limite: opts.limite ?? PAGE_LIMIT });
-  return api(`/inventarios/movimientos?${query}`, { signal: opts.signal }).then(result => result.datos);
+  const query = queryParams({
+    ...filters,
+    desde: opts.desde ?? 0,
+    limite: opts.limite ?? PAGE_LIMIT,
+  });
+  return api(`/inventarios/movimientos?${query}`, { signal: opts.signal }).then(
+    (result) => result.datos,
+  );
 }
 
 export function saveCatalogoApi(api, resource, values, id = null) {
   if (!['sucursales', 'medicamentos'].includes(resource)) throw new Error('Recurso no autorizado.');
-  return api(asPath(resource, id), { method: id ? 'PATCH' : 'POST', body: values }).then(result => result.datos);
+  return api(asPath(resource, id), { method: id ? 'PATCH' : 'POST', body: values }).then(
+    (result) => result.datos,
+  );
 }
 
 export function createMovimientoApi(api, values) {
-  return api('/inventarios/movimientos', { method: 'POST', body: values }).then(result => result.datos);
+  return api('/inventarios/movimientos', { method: 'POST', body: values }).then(
+    (result) => result.datos,
+  );
 }
 
 // Catálogos de selección paginados. El endpoint no incluye total general de registros.
@@ -40,14 +56,18 @@ export async function listOpcionesApi(api, resource, { signal, maxPages = 20 } =
     if (list.length < 100) return rows;
   }
   // No ocultamos silenciosamente opciones si se superó el máximo de consulta.
-  throw new Error('El catálogo supera el límite de carga de opciones de esta versión. Consulta por página.');
+  throw new Error(
+    'El catálogo supera el límite de carga de opciones de esta versión. Consulta por página.',
+  );
 }
 
 // Opciones de sucursales activas para transferencias, sin requerir permisos de administrador.
 export async function listDestinosTransferenciaApi(api, { signal, maxPages = 20 } = {}) {
   const rows = [];
   for (let page = 0; page < maxPages; page++) {
-    const result = await api(`/sucursales/destinos-transferencia?desde=${page * 100}&limite=100`, { signal });
+    const result = await api(`/sucursales/destinos-transferencia?desde=${page * 100}&limite=100`, {
+      signal,
+    });
     const list = result.datos;
     if (!Array.isArray(list)) throw new Error('Respuesta de destinos inválida.');
     rows.push(...list);

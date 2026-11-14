@@ -25,7 +25,18 @@ function PublicLogin() {
   if (estado === 'comprobando') return <LoadingScreen />;
   return estado === 'autenticado' ? <Navigate to="/" replace /> : <LoginPage />;
 }
-const IMPLEMENTADOS = Object.freeze({ sucursales: SucursalesPage, medicamentos: MedicamentosPage, inventarios: InventariosPage, transferencias: TransferenciasPage, efectivo: EfectivoPage, planillas: PlanillasPage, activos: ActivosPage, solicitudes: SolicitudesPage, auditoria: AuditoriaPage, usuarios: UsuariosPage });
+const IMPLEMENTADOS = Object.freeze({
+  sucursales: SucursalesPage,
+  medicamentos: MedicamentosPage,
+  inventarios: InventariosPage,
+  transferencias: TransferenciasPage,
+  efectivo: EfectivoPage,
+  planillas: PlanillasPage,
+  activos: ActivosPage,
+  solicitudes: SolicitudesPage,
+  auditoria: AuditoriaPage,
+  usuarios: UsuariosPage,
+});
 function AllowedModule({ modulo }) {
   const { usuario } = useAuth();
   if (!puedeAcceder(usuario?.rol, modulo)) return <UnauthorizedPage />;
@@ -34,14 +45,32 @@ function AllowedModule({ modulo }) {
 }
 
 export default function App() {
-  return <AuthProvider><BrowserRouter><Routes>
-    <Route path="/acceso" element={<PublicLogin />} />
-    <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
-      <Route index element={<HomePage />} />
-      {MODULOS.map(modulo => <Route key={modulo.id} path={modulo.ruta.slice(1)} element={<AllowedModule modulo={modulo} />} />)}
-      <Route path="/sin-acceso" element={<UnauthorizedPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Route>
-    <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes></BrowserRouter></AuthProvider>;
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/acceso" element={<PublicLogin />} />
+          <Route
+            element={
+              <RequireAuth>
+                <AppLayout />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<HomePage />} />
+            {MODULOS.map((modulo) => (
+              <Route
+                key={modulo.id}
+                path={modulo.ruta.slice(1)}
+                element={<AllowedModule modulo={modulo} />}
+              />
+            ))}
+            <Route path="/sin-acceso" element={<UnauthorizedPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }

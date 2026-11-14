@@ -2,33 +2,103 @@
 export const ROLES = Object.freeze({
   ADMIN: 'ADMIN_CENTRAL',
   ENCARGADO: 'ENCARGADO',
-  COORD: 'COORD_ENTREGAS'
+  COORD: 'COORD_ENTREGAS',
 });
 
 export const ROLE_LABELS = Object.freeze({
   [ROLES.ADMIN]: 'Administrador central',
   [ROLES.ENCARGADO]: 'Encargado de sucursal',
-  [ROLES.COORD]: 'Coordinador de entregas'
+  [ROLES.COORD]: 'Coordinador de entregas',
 });
 
 const TODOS = [ROLES.ADMIN, ROLES.ENCARGADO, ROLES.COORD];
 const GESTION = [ROLES.ADMIN, ROLES.ENCARGADO];
 
 export const MODULOS = Object.freeze([
-  { id: 'sucursales', nombre: 'Sucursales', ruta: '/sucursales', icono: 'store', roles: TODOS, descripcion: 'Puntos de venta y ubicaciones.' },
-  { id: 'medicamentos', nombre: 'Medicamentos', ruta: '/medicamentos', icono: 'pill', roles: TODOS, descripcion: 'Catálogo de medicamentos.' },
-  { id: 'inventarios', nombre: 'Inventarios', ruta: '/inventarios', icono: 'boxes', roles: TODOS, descripcion: 'Existencias y disponibilidad por sucursal.' },
-  { id: 'transferencias', nombre: 'Transferencias', ruta: '/transferencias', icono: 'arrows', roles: GESTION, descripcion: 'Movimientos entre sucursales.' },
-  { id: 'efectivo', nombre: 'Efectivo', ruta: '/efectivo', icono: 'wallet', roles: GESTION, descripcion: 'Ingresos, egresos y flujo neto.' },
-  { id: 'planillas', nombre: 'Planillas', ruta: '/planillas', icono: 'receipt', roles: GESTION, descripcion: 'Gastos por sucursal y período.' },
-  { id: 'activos', nombre: 'Activos fijos', ruta: '/activos', icono: 'briefcase', roles: GESTION, descripcion: 'Registro y valoración de activos.' },
-  { id: 'solicitudes', nombre: 'Solicitudes y entregas', ruta: '/solicitudes', icono: 'truck', roles: TODOS, descripcion: 'Disponibilidad y coordinación de entregas.' },
-  { id: 'usuarios', nombre: 'Usuarios', ruta: '/usuarios', icono: 'user', roles: [ROLES.ADMIN], descripcion: 'Cuentas, roles y acceso a sucursales.' },
-  { id: 'auditoria', nombre: 'Auditoría', ruta: '/auditoria', icono: 'shield', roles: [ROLES.ADMIN], descripcion: 'Trazabilidad centralizada de operaciones.' }
+  {
+    id: 'sucursales',
+    nombre: 'Sucursales',
+    ruta: '/sucursales',
+    icono: 'store',
+    roles: TODOS,
+    descripcion: 'Puntos de venta y ubicaciones.',
+  },
+  {
+    id: 'medicamentos',
+    nombre: 'Medicamentos',
+    ruta: '/medicamentos',
+    icono: 'pill',
+    roles: TODOS,
+    descripcion: 'Catálogo de medicamentos.',
+  },
+  {
+    id: 'inventarios',
+    nombre: 'Inventarios',
+    ruta: '/inventarios',
+    icono: 'boxes',
+    roles: TODOS,
+    descripcion: 'Existencias y disponibilidad por sucursal.',
+  },
+  {
+    id: 'transferencias',
+    nombre: 'Transferencias',
+    ruta: '/transferencias',
+    icono: 'arrows',
+    roles: GESTION,
+    descripcion: 'Movimientos entre sucursales.',
+  },
+  {
+    id: 'efectivo',
+    nombre: 'Efectivo',
+    ruta: '/efectivo',
+    icono: 'wallet',
+    roles: GESTION,
+    descripcion: 'Ingresos, egresos y flujo neto.',
+  },
+  {
+    id: 'planillas',
+    nombre: 'Planillas',
+    ruta: '/planillas',
+    icono: 'receipt',
+    roles: GESTION,
+    descripcion: 'Gastos por sucursal y período.',
+  },
+  {
+    id: 'activos',
+    nombre: 'Activos fijos',
+    ruta: '/activos',
+    icono: 'briefcase',
+    roles: GESTION,
+    descripcion: 'Registro y valoración de activos.',
+  },
+  {
+    id: 'solicitudes',
+    nombre: 'Solicitudes y entregas',
+    ruta: '/solicitudes',
+    icono: 'truck',
+    roles: TODOS,
+    descripcion: 'Disponibilidad y coordinación de entregas.',
+  },
+  {
+    id: 'usuarios',
+    nombre: 'Usuarios',
+    ruta: '/usuarios',
+    icono: 'user',
+    roles: [ROLES.ADMIN],
+    descripcion: 'Cuentas, roles y acceso a sucursales.',
+  },
+  {
+    id: 'auditoria',
+    nombre: 'Auditoría',
+    ruta: '/auditoria',
+    icono: 'shield',
+    roles: [ROLES.ADMIN],
+    descripcion: 'Trazabilidad centralizada de operaciones.',
+  },
 ]);
 
 export function modulosPorRol(rol) {
-  return MODULOS.filter(modulo => modulo.roles.includes(rol));
+  return MODULOS.filter((modulo) => modulo.roles.includes(rol));
 }
 
 export function puedeAcceder(rol, modulo) {
@@ -40,7 +110,12 @@ export function nombreRol(rol) {
 }
 
 export function usuarioValido(usuario) {
-  return usuario && Number.isSafeInteger(usuario.id_usuario) && usuario.id_usuario > 0 &&
-    typeof usuario.nombre === 'string' && typeof usuario.correo === 'string' &&
-    Object.values(ROLES).includes(usuario.rol);
+  return (
+    usuario &&
+    Number.isSafeInteger(usuario.id_usuario) &&
+    usuario.id_usuario > 0 &&
+    typeof usuario.nombre === 'string' &&
+    typeof usuario.correo === 'string' &&
+    Object.values(ROLES).includes(usuario.rol)
+  );
 }
